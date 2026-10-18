@@ -155,6 +155,17 @@ class NorthlabSalesRadarTests(unittest.TestCase):
         self.assertIsNone(lead)
         self.assertEqual(reason, "community_directory")
 
+    def test_reddit_advice_only_not_hiring_is_not_project(self):
+        lead, reason = radar.classify(
+            "Looking for information on how to find a web developer for a film society booking site. "
+            "For the record, I am not looking to hire someone from here. "
+            "I just don't know what to look for when finding information about web developers. "
+            "Any tips or guidance would be greatly appreciated. "
+            "What is the average cost of creating a website like this?"
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "advice_only_not_hiring")
+
 
 if __name__ == "__main__":
     unittest.main()
