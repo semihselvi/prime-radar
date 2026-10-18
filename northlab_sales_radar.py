@@ -17,7 +17,7 @@ import requests
 import main as core
 import northlab_sales_source_hub as source_hub
 
-VERSION = "1.8-community-directory-guard"
+VERSION = "1.9-advice-only-guard"
 COLLECTION = "northlab_sales_project_leads"
 SCAN_COLLECTION = "northlab_sales_project_scans"
 TELEGRAM_HOURS = int(os.getenv("NORTHLAB_TELEGRAM_HOURS", "24"))
@@ -319,6 +319,19 @@ COMMUNITY_DIRECTORY_RE = re.compile(
     re.I | re.S,
 )
 
+ADVICE_ONLY_NOT_HIRING_RE = re.compile(
+    r"(?:"
+    r"\bi\s+am\s+not\s+looking\s+to\s+hire\b|"
+    r"\bnot\s+looking\s+to\s+hire\s+someone\b|"
+    r"\bjust\s+(?:looking\s+for|seeking)\s+(?:information|advice|guidance)\b|"
+    r"\bany\s+tips\s+or\s+guidance\b|"
+    r"\bwhat\s+should\s+i\s+look\s+for\b.{0,120}\b(?:developer|agency|freelancer)\b|"
+    r"\bhow\s+do\s+i\s+find\b.{0,120}\b(?:developer|agency|freelancer)\b|"
+    r"\bwhat\s+is\s+the\s+average\s+cost\b.{0,120}\b(?:website|web\s*site|web\s+app)\b"
+    r")",
+    re.I | re.S,
+)
+
 GENERIC_SUPPORT_THREAD_RE = re.compile(
     r"(?:"
     r"amazon['’]?s?\s+us[-\s]?based\s+customer\s+service|"
@@ -443,6 +456,8 @@ def classify(text: str) -> tuple[dict[str, Any] | None, str]:
         return None, "community_directory"
     if GENERIC_SUPPORT_THREAD_RE.search(value):
         return None, "generic_support_thread"
+    if ADVICE_ONLY_NOT_HIRING_RE.search(value):
+        return None, "advice_only_not_hiring"
     if PORTAL_SUPPORT_RE.search(value):
         return None, "portal_account_support"
     if DOCUMENT_ACCOUNT_CONTEXT_RE.search(value) and re.search(r"личн\w*\s+кабинет|account|hesap", value, re.I):
