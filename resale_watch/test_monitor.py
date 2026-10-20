@@ -90,6 +90,28 @@ class ResaleAsyncTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(report["telegram_deleted_verified"], [])
         self.assertEqual(len(report["telegram_reposts_suppressed"]), 1)
 
+    async def test_repost_with_same_source_listing_id_suppresses_price_changed_pair(self):
+        old = {"checked_at": "2026-10-19T00:00:00+00:00", "telegram": {
+            "15708": {"id": 15708, "link": "https://t.me/h0t_real_estate/15708",
+                      "hash": "oldhash", "source_listing_id": "2153",
+                      "excerpt": "#2153 Iskele Bogaz Seaview 2+1 102 m2 53.000£",
+                      "published": "2026-10-18T10:00:00+00:00",
+                      "beds": 2, "area_m2": 102, "floor": 2, "price_gbp": 53000}
+        }, "site": {}, "oct13_catchup_complete": True}
+        current = {
+            "17087": {"id": 17087, "link": "https://t.me/h0t_real_estate/17087",
+                      "hash": "newhash", "source_listing_id": "2153",
+                      "excerpt": "#2153 Safakoy Seaview 2+1 102 m2 54.000£",
+                      "published": "2026-10-20T10:00:00+00:00",
+                      "beds": 2, "area_m2": 102, "floor": 2, "price_gbp": 54000}
+        }
+        client = type("FakeClient", (), {})()
+        client.get_messages = AsyncMock(return_value=[None])
+        report = await compare(old, {}, current, client, object())
+        self.assertEqual(report["telegram_new"], [])
+        self.assertEqual(report["telegram_deleted_verified"], [])
+        self.assertEqual(len(report["telegram_reposts_suppressed"]), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
