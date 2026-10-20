@@ -22,7 +22,7 @@ radar = batch_guard.radar
 core = radar.core
 v5 = radar.v5
 
-VERSION = "6.36-marketing-content-guard"
+VERSION = "6.37-cross-group-buyer-dedup"
 for _module in (radar, radar.v53, radar.v53.v52, radar.v53.gate, v5):
     _module.VERSION = VERSION
 
@@ -1481,6 +1481,37 @@ def _buyer_contact_key(msg: Any, author: str = "") -> str:
     return ""
 
 
+def _normalized_buyer_demand(text: str) -> str:
+    """Normalize a buyer's own demand so reposts across Telegram groups compare equal."""
+    value = str(text or "").casefold().replace("ё", "е")
+    value = re.sub(r"https?://\S+|t\.me/\S+", " ", value)
+    value = re.sub(r"[^\w+£€$]+", " ", value, flags=re.UNICODE)
+    return " ".join(value.split())
+
+
+def _already_notified_same_buyer_demand(db_client: Any, author: str, text: str) -> bool:
+    """Cross-group/cross-run exact-demand dedupe for identifiable Telegram users.
+
+    We intentionally key on both the public author and normalized demand text:
+    the same person can still generate a new lead when their requirement changes.
+    """
+    who = str(author or "").strip()
+    normalized = _normalized_buyer_demand(text)
+    if not who or not normalized or len(normalized) < 12:
+        return False
+    try:
+        query = db_client.collection(core.COLLECTION).where("author", "==", who).limit(40)
+        for snap in query.stream():
+            row = snap.to_dict() or {}
+            if not (row.get("v5_notified_at") or row.get("v6_notified_at")):
+                continue
+            if _normalized_buyer_demand(row.get("message") or row.get("text") or "") == normalized:
+                return True
+    except Exception as exc:
+        DEBUG["errors"].append(f"cross_group_dedup:{type(exc).__name__}:{exc}")
+    return False
+
+
 def _apply_global_recency(signal: dict[str, Any], age_days: int) -> dict[str, Any]:
     out = dict(signal)
     reasons = list(out.get("lead_reasons") or [])
@@ -1855,6 +1886,11 @@ async def broad_telegram_scan(db_client, started):
                                         })
                         continue
 
+                    if _already_notified_same_buyer_demand(db_client, candidate.get("author", ""), text):
+                        DEBUG["already_notified"] += 1
+                        DEBUG["reject_reasons"]["duplicate_same_buyer_demand"] += 1
+                        continue
+
                     stable_id = f"telegram|{dialog.id}|{msg.id}"
                     lead_id = hashlib.sha256(stable_id.encode("utf-8")).hexdigest()
                     ref = db_client.collection(core.COLLECTION).document(lead_id)
@@ -2114,6 +2150,13 @@ async def broad_telegram_scan(db_client, started):
                     else:
                         DEBUG["global_search_aged_warm"] += 1
 
+                    if _already_notified_same_buyer_demand(db_client, candidate.get("author", ""), text):
+                        DEBUG["already_notified"] += 1
+                        DEBUG["global_search_known_matches"] += 1
+                        DEBUG["global_search_reject_reasons"]["duplicate_same_buyer_demand"] += 1
+                        qstat["known"] += 1
+                        continue
+
                     stable_id = f"telegram-global|{username.casefold()}|{msg_id}"
                     lead_id = hashlib.sha256(stable_id.encode("utf-8")).hexdigest()
                     ref = db_client.collection(core.COLLECTION).document(lead_id)
@@ -2282,6 +2325,12 @@ async def broad_telegram_scan(db_client, started):
                         "found_at": started.isoformat(),
                     }
 
+                    if _already_notified_same_buyer_demand(db_client, candidate.get("author", ""), text):
+                        DEBUG["already_notified"] += 1
+                        DEBUG["peer_discovery_known_matches"] += 1
+                        DEBUG["peer_discovery_reject_reasons"]["duplicate_same_buyer_demand"] += 1
+                        continue
+
                     stable_id = f"telegram-peer|{username.casefold()}|{msg_id}"
                     lead_id = hashlib.sha256(stable_id.encode("utf-8")).hexdigest()
                     ref = db_client.collection(core.COLLECTION).document(lead_id)
@@ -2404,6 +2453,10 @@ async def broad_telegram_scan(db_client, started):
                 DEBUG["source_expansion_seed_valid_matches"] += 1
                 age_days = max(0, int((datetime.now(timezone.utc) - dt).total_seconds() // 86400))
                 effective = _apply_global_recency(signal, age_days)
+                if _already_notified_same_buyer_demand(db_client, author, text):
+                    DEBUG["already_notified"] += 1
+                    DEBUG["source_expansion_seed_known_matches"] += 1
+                    continue
                 stable_id = f"telegram-global|{seed.casefold()}|{msg_id}"
                 lead_id = hashlib.sha256(stable_id.encode("utf-8")).hexdigest()
                 ref = db_client.collection(core.COLLECTION).document(lead_id)
@@ -2667,6 +2720,11 @@ async def broad_telegram_scan(db_client, started):
                     "discovered_from": sorted(seed_refs),
                 }
 
+                if _already_notified_same_buyer_demand(db_client, author, text):
+                    DEBUG["already_notified"] += 1
+                    DEBUG["source_expansion_known_matches"] += 1
+                    DEBUG["source_expansion_reject_reasons"]["duplicate_same_buyer_demand"] += 1
+                    continue
                 stable_id = f"telegram-global|{username.casefold()}|{msg_id}"
                 lead_id = hashlib.sha256(stable_id.encode("utf-8")).hexdigest()
                 ref = db_client.collection(core.COLLECTION).document(lead_id)
