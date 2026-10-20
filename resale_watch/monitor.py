@@ -26,6 +26,7 @@ BEDS = re.compile(r"(?<!\d)([0-5])\s*[+＋]\s*1(?!\d)")
 AREA = re.compile(r"(\d{2,4})\s*(?:m²|m2|metrekare|кв\s*м)", re.I)
 FLOOR = re.compile(r"(?:\b(\d{1,2})\s*(?:\.?\s*kat(?:ta)?|(?:st|nd|rd|th)\s+floor|этаж(?:е)?)\b)", re.I)
 OFFER = re.compile(r"(\d\s*[+＋]\s*1|stüdyo|studio|студи|вилла|villa|townhouse|таунхаус|daire|квартир|penthouse|dubleks|duplex|arsa)", re.I)
+SOURCE_LISTING_ID = re.compile(r"(?<!\w)#(\d{3,6})\b")
 
 
 def normalized(value):
@@ -154,6 +155,7 @@ async def scan_telegram():
                 "published": message.date.isoformat() if message.date else None,
                 "price_gbp": gbp(text),
                 "hash": hashlib.sha256(text.encode("utf-8")).hexdigest()[:20],
+                "source_listing_id": (SOURCE_LISTING_ID.search(text).group(1) if SOURCE_LISTING_ID.search(text) else None),
                 "excerpt": re.sub(r"\s+", " ", text)[:160],
                 **description(text),
             }
@@ -239,13 +241,18 @@ async def compare(previous, sites, current, client, entity):
     # inventory event. Pair identical message hashes and suppress both sides.
     reposts = []
     removed_by_hash = {}
+    removed_by_source_id = {}
     for item in removed:
         if item.get("hash"):
             removed_by_hash.setdefault(item["hash"], []).append(item)
+        if item.get("source_listing_id"):
+            removed_by_source_id.setdefault(item["source_listing_id"], []).append(item)
     kept_new = []
     paired_removed_ids = set()
     for item in new:
         bucket = removed_by_hash.get(item.get("hash")) or []
+        if not bucket and item.get("source_listing_id"):
+            bucket = removed_by_source_id.get(item.get("source_listing_id")) or []
         old_item = next((x for x in bucket if x.get("id") not in paired_removed_ids), None)
         if old_item:
             paired_removed_ids.add(old_item.get("id"))
