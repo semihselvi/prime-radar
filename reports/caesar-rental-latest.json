@@ -1,14 +1,20 @@
 {
   "status": "completed",
-  "scanned_at": "2026-10-20T11:35:47.632766+00:00",
+  "scanned_at": "2026-10-20T17:02:54.776433+00:00",
   "groups": 112,
-  "messages": 19773,
+  "messages": 19808,
   "matches": 16,
   "niche_studio": 1,
   "one_bed": 15,
   "unlinked": 0,
   "errors": 0,
   "public_offers": [
+    {
+      "kind": "1+1",
+      "date": "2026-10-20T14:33:36+00:00",
+      "url": "https://t.me/cyprusprop/979479",
+      "price_mentions": []
+    },
     {
       "kind": "1+1",
       "date": "2026-10-20T09:37:43+00:00",
@@ -61,12 +67,6 @@
       "kind": "1+1",
       "date": "2026-10-16T18:54:16+00:00",
       "url": "https://t.me/severnyy_kipr_chat/180908",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
-      "date": "2026-10-16T18:49:47+00:00",
-      "url": "https://t.me/NorthCyprus_Island/179516",
       "price_mentions": []
     },
     {
