@@ -166,6 +166,23 @@ class NorthlabSalesRadarTests(unittest.TestCase):
         self.assertIsNone(lead)
         self.assertEqual(reason, "advice_only_not_hiring")
 
+    def test_x_join_our_team_web_developer_is_employment(self):
+        lead, reason = radar.classify(
+            "We are looking for a Professional Web Developer to join our team. Strong experience in HTML, CSS, JavaScript. "
+            "Send your portfolio hassankmm274@gmail.com #WebDeveloper #Hiring"
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "employment_vacancy")
+
+    def test_framer_portfolio_build_request_is_project(self):
+        lead, reason = radar.classify(
+            "Looking for a talented web developer who knows their way around Framer to build my new portfolio website. "
+            "Drop your best work in the replies or shoot me a DM."
+        )
+        self.assertIsNotNone(lead, reason)
+        self.assertIn(lead["lead_class"], {"WARM PROJECT", "HOT PROJECT"})
+        self.assertIn("WEBSITE", lead["project_types"])
+
 
 if __name__ == "__main__":
     unittest.main()
