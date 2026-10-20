@@ -17,7 +17,7 @@ import requests
 import main as core
 import northlab_sales_source_hub as source_hub
 
-VERSION = "1.9-advice-only-guard"
+VERSION = "2.0-hiring-vs-project-guard"
 COLLECTION = "northlab_sales_project_leads"
 SCAN_COLLECTION = "northlab_sales_project_scans"
 TELEGRAM_HOURS = int(os.getenv("NORTHLAB_TELEGRAM_HOURS", "24"))
@@ -144,6 +144,8 @@ JOB_SEEKER_RE = re.compile(
 EMPLOYMENT_RE = re.compile(
     r"(?:"
     r"\bfull[-\s]?time\b|\bpart[-\s]?time\b|\bsalary\b|\bvacancy\b|\bjob\s+opening\b|\bemployment\b|"
+    r"\bjoin\s+our\s+team\b|\b#hiring\b|\bwe\s+are\s+hiring\b|"
+    r"\bsend\s+your\s+(?:cv|resume|portfolio)\b.{0,100}\b(?:@|email|gmail|outlook|hotmail)\b|"
     r"\bmaa[sş]\b|\btam\s+zamanl[ıi]\b|\byar[ıi]\s+zamanl[ıi]\b|\bi[sş]\s+ilan[ıi]\b|"
     r"\bваканси\w*\b|\bзарплат\w*\b|\bполная\s+занятость\b|\bчастичная\s+занятость\b"
     r")",
