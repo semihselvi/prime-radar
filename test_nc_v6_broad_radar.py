@@ -1042,6 +1042,29 @@ class BroadIntentTests(unittest.TestCase):
         self.assertIsNotNone(lead, reason)
         self.assertEqual("BUYER", lead["intent_type"])
 
+    def test_cross_group_same_buyer_demand_is_detected(self):
+        class Snap:
+            def to_dict(self):
+                return {
+                    "author": "@batuhanarslann7",
+                    "message": "Куплю 2+1 в Long Beach напрямую от собственника. Предложения в личные сообщения.",
+                    "v6_notified_at": "2026-10-17T00:00:00Z",
+                }
+        class Query:
+            def where(self, *args, **kwargs): return self
+            def limit(self, *args, **kwargs): return self
+            def stream(self): return [Snap()]
+        class DB:
+            def collection(self, *args, **kwargs): return Query()
+        self.assertTrue(v6._already_notified_same_buyer_demand(
+            DB(), "@batuhanarslann7",
+            "Куплю 2+1 в Long Beach напрямую от собственника. Предложения в личные сообщения."
+        ))
+        self.assertFalse(v6._already_notified_same_buyer_demand(
+            DB(), "@batuhanarslann7",
+            "Куплю квартиру 2+1 в Riverside Residence напрямую у собственника."
+        ))
+
 
 if __name__ == "__main__":
     unittest.main()
