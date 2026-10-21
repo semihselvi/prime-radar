@@ -1,11 +1,11 @@
 {
   "status": "completed",
-  "scanned_at": "2026-10-21T13:54:12.083074+00:00",
-  "groups": 113,
-  "messages": 19823,
-  "matches": 22,
+  "scanned_at": "2026-10-21T18:46:31.837751+00:00",
+  "groups": 114,
+  "messages": 19942,
+  "matches": 20,
   "niche_studio": 1,
-  "one_bed": 21,
+  "one_bed": 19,
   "unlinked": 0,
   "errors": 0,
   "public_offers": [
@@ -79,18 +79,6 @@
       "kind": "1+1",
       "date": "2026-10-20T04:57:01+00:00",
       "url": "https://t.me/cyprusprop/979331",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
-      "date": "2026-10-18T09:37:46+00:00",
-      "url": "https://t.me/cyprusprop/979011",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
-      "date": "2026-10-18T07:26:49+00:00",
-      "url": "https://t.me/NorthCyprus_Island/179724",
       "price_mentions": []
     },
     {
