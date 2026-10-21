@@ -1,14 +1,20 @@
 {
   "status": "completed",
-  "scanned_at": "2026-10-21T07:39:23.271470+00:00",
-  "groups": 112,
-  "messages": 19817,
-  "matches": 21,
+  "scanned_at": "2026-10-21T13:54:12.083074+00:00",
+  "groups": 113,
+  "messages": 19823,
+  "matches": 22,
   "niche_studio": 1,
-  "one_bed": 20,
+  "one_bed": 21,
   "unlinked": 0,
   "errors": 0,
   "public_offers": [
+    {
+      "kind": "1+1",
+      "date": "2026-10-21T13:02:54+00:00",
+      "url": "https://t.me/NorthCyprus_Island/180453",
+      "price_mentions": []
+    },
     {
       "kind": "1+1",
       "date": "2026-10-21T06:59:24+00:00",
