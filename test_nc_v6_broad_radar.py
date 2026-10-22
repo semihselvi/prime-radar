@@ -1065,6 +1065,15 @@ class BroadIntentTests(unittest.TestCase):
             "Куплю квартиру 2+1 в Riverside Residence напрямую у собственника."
         ))
 
+    def test_blocked_batuhan_author_is_rejected(self):
+        lead, reason = v6.classify_text(
+            "Куплю 2+1 в Long Beach напрямую от собственника. Предложения в личные сообщения.",
+            group="СЕВЕРНЫЙ КИПР | НЕДВИЖИМОСТЬ",
+            author="@batuhanarslann7",
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "blocked_buyer_author")
+
 
 if __name__ == "__main__":
     unittest.main()
