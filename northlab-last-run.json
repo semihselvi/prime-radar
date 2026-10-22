@@ -2,11 +2,11 @@
   "status": "success",
   "version": "2.0-hiring-vs-project-guard",
   "telegram_groups": 85,
-  "telegram_messages": 1360,
+  "telegram_messages": 1362,
   "telegram_global_queries": 22,
-  "telegram_global_messages": 189,
-  "web_raw": 224,
-  "web_accepted": 2,
+  "telegram_global_messages": 190,
+  "web_raw": 203,
+  "web_accepted": 0,
   "hub_raw": 25,
   "hub_accepted": 0,
   "hub_source_counts": {
@@ -19,40 +19,34 @@
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 800,
-    "marketplace_ad": 92,
-    "bot_author": 161,
-    "duplicate_text": 276,
-    "job_seeker": 4,
-    "weak_project_signal": 8,
-    "employment_vacancy": 5,
-    "news_content": 3,
+    "no_project_signal": 814,
+    "duplicate_text": 260,
+    "news_content": 2,
+    "weak_project_signal": 10,
+    "bot_author": 171,
+    "marketplace_ad": 87,
+    "education": 30,
     "crypto_or_earnings_recruitment": 2,
-    "education": 32
+    "employment_vacancy": 5,
+    "job_seeker": 5
   },
   "web_rejects": {
-    "no_project_signal": 143,
-    "platform_or_product_promo": 19,
-    "weak_project_signal": 23,
-    "education": 3,
-    "employment_vacancy": 3
+    "no_project_signal": 131,
+    "platform_or_product_promo": 11,
+    "weak_project_signal": 25,
+    "education": 2,
+    "service_provider_promo": 2,
+    "employment_vacancy": 1
   },
   "hub_rejects": {
-    "no_project_signal": 17,
-    "weak_project_signal": 8
+    "no_project_signal": 19,
+    "weak_project_signal": 6
   },
-  "accepted_classes": {
-    "WARM PROJECT": 2
-  },
-  "project_types": {
-    "WEBSITE": 2,
-    "ECOMMERCE": 1
-  },
-  "languages": {
-    "EN": 2
-  },
-  "started_at": "2026-10-21T23:36:43.350846+00:00",
-  "completed_at": "2026-10-21T23:37:49.811021+00:00",
-  "new_leads": 1,
-  "alerts": 1
+  "accepted_classes": {},
+  "project_types": {},
+  "languages": {},
+  "started_at": "2026-10-22T07:57:32.791548+00:00",
+  "completed_at": "2026-10-22T07:58:30.880194+00:00",
+  "new_leads": 0,
+  "alerts": 0
 }
