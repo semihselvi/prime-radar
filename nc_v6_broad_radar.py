@@ -22,7 +22,12 @@ radar = batch_guard.radar
 core = radar.core
 v5 = radar.v5
 
-VERSION = "6.37-cross-group-buyer-dedup"
+VERSION = "6.38-blocked-buyer-authors"
+
+BLOCKED_BUYER_AUTHORS = {
+    "batuhanarslann7",
+}
+
 for _module in (radar, radar.v53, radar.v53.v52, radar.v53.gate, v5):
     _module.VERSION = VERSION
 
@@ -590,6 +595,9 @@ def criteria(text: str) -> list[str]:
 
 
 def _hard_reject(text: str, author: str = "") -> str:
+    clean_author = str(author or "").strip().lstrip("@").casefold()
+    if clean_author in BLOCKED_BUYER_AUTHORS:
+        return "blocked_buyer_author"
     if radar.TG_BOT_AUTHOR_RE.search(author or ""):
         return "bot_author"
     if batch_guard.is_nonproperty_goods_request(text):
