@@ -1,14 +1,38 @@
 {
   "status": "completed",
-  "scanned_at": "2026-10-23T13:32:31.322603+00:00",
-  "groups": 114,
-  "messages": 19877,
+  "scanned_at": "2026-10-23T18:28:02.959564+00:00",
+  "groups": 117,
+  "messages": 20333,
   "matches": 24,
-  "niche_studio": 1,
-  "one_bed": 23,
+  "niche_studio": 5,
+  "one_bed": 19,
   "unlinked": 0,
   "errors": 0,
   "public_offers": [
+    {
+      "kind": "niche_studio",
+      "date": "2026-10-23T18:23:48+00:00",
+      "url": "https://t.me/northern_cyprus_forum/341479",
+      "price_mentions": []
+    },
+    {
+      "kind": "niche_studio",
+      "date": "2026-10-23T18:17:08+00:00",
+      "url": "https://t.me/cyprusprop/980041",
+      "price_mentions": []
+    },
+    {
+      "kind": "niche_studio",
+      "date": "2026-10-23T18:16:21+00:00",
+      "url": "https://t.me/ChatRealEstateSales7/209502",
+      "price_mentions": []
+    },
+    {
+      "kind": "niche_studio",
+      "date": "2026-10-23T18:13:58+00:00",
+      "url": "https://t.me/NorthCyprus_Island/181023",
+      "price_mentions": []
+    },
     {
       "kind": "1+1",
       "date": "2026-10-22T15:25:39+00:00",
@@ -59,12 +83,6 @@
     },
     {
       "kind": "1+1",
-      "date": "2026-10-21T05:19:52+00:00",
-      "url": "https://t.me/severnyi_kipr/1739973",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
       "date": "2026-10-21T05:19:00+00:00",
       "url": "https://t.me/cyprusprop/979550",
       "price_mentions": []
@@ -95,26 +113,8 @@
     },
     {
       "kind": "1+1",
-      "date": "2026-10-20T04:57:31+00:00",
-      "url": "https://t.me/severnyi_kipr/1739863",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
-      "date": "2026-10-20T04:57:01+00:00",
-      "url": "https://t.me/cyprusprop/979331",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
       "date": "2026-10-16T18:55:25+00:00",
       "url": "https://t.me/severni_kipr_all/15572",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
-      "date": "2026-10-16T18:54:16+00:00",
-      "url": "https://t.me/severnyy_kipr_chat/180908",
       "price_mentions": []
     },
     {
