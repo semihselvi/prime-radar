@@ -22,10 +22,12 @@ radar = batch_guard.radar
 core = radar.core
 v5 = radar.v5
 
-VERSION = "6.38-blocked-buyer-authors"
+VERSION = "6.39-agent-content-tightening"
 
 BLOCKED_BUYER_AUTHORS = {
     "batuhanarslann7",
+    "gprealestate",
+    "gp real estate | северный кипр",
 }
 
 for _module in (radar, radar.v53, radar.v53.v52, radar.v53.gate, v5):
@@ -234,6 +236,8 @@ AGENT_OR_CLIENT_REP_RE = re.compile(
     r"\bищу\s+для\s+клиент\w*\b|"
     r"\bклиент\s+(?:ищет|хочет|готов\w*\s+купить)\b|"
     r"\bfor\s+(?:my|a|the)\s+client\b|"
+    r"\bfor\s+(?:a\s+)?ready\s+client\b|"
+    r"\bthe\s+client\s+is\s+ready\b|"
     r"\bclient\s+(?:is\s+)?looking\s+(?:to\s+buy|for)\b|"
     r"\bon\s+behalf\s+of\s+(?:my\s+)?client\b|"
     r"\bm[üu][şs]terim\s+i[çc]in\b|"
