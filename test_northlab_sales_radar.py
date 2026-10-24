@@ -183,6 +183,20 @@ class NorthlabSalesRadarTests(unittest.TestCase):
         self.assertIn(lead["lead_class"], {"WARM PROJECT", "HOT PROJECT"})
         self.assertIn("WEBSITE", lead["project_types"])
 
+    def test_guru_marketplace_page_is_not_project(self):
+        lead, reason = radar.classify(
+            "If you are looking for a web developer for your next project, you can find and hire freelance web developers on Guru."
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "marketplace_directory")
+
+    def test_visa_site_information_is_not_web_project(self):
+        lead, reason = radar.classify(
+            "Для россиян ничего не изменилось, кроме того, что продлевать визу при необходимости нужно будет не в полиции, а оформлять на сайте."
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "reference_site_mention")
+
 
 if __name__ == "__main__":
     unittest.main()
