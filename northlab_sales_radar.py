@@ -17,7 +17,7 @@ import requests
 import main as core
 import northlab_sales_source_hub as source_hub
 
-VERSION = "2.0-hiring-vs-project-guard"
+VERSION = "2.1-marketplace-visa-context-guard"
 COLLECTION = "northlab_sales_project_leads"
 SCAN_COLLECTION = "northlab_sales_project_scans"
 TELEGRAM_HOURS = int(os.getenv("NORTHLAB_TELEGRAM_HOURS", "24"))
@@ -284,6 +284,9 @@ KNOWN_PLATFORM_HOSTS = {
 
 REFERENCE_SITE_MENTION_RE = re.compile(
     r"(?:"
+    r"\b(?:e[-\s]?visa|visa|виз[ау]|e[-\s]?виз[ау])\b.{0,180}\b(?:сайт\w*|website|portal)\b|"
+    r"\b(?:сайт\w*|website|portal)\b.{0,180}\b(?:e[-\s]?visa|visa|виз[ау]|e[-\s]?виз[ау])\b|"
+    r"\bоформлять\s+на\s+сайте\b|"
     r"\b(?:через|на)\s+сайт\w*\b.{0,120}\b(?:виза|визов|университет|обучен|почитайте|информац)\b|"
     r"\bпочитайте\s+сайт\b|\bобратил(?:ся|ась)\s+по\s+электронке\b|"
     r"\b(?:check|read|see|visit)\s+(?:the\s+)?(?:official\s+)?website\b.{0,120}\b(?:visa|university|admission|information|support)\b|"
@@ -305,6 +308,8 @@ EXISTING_JOB_HELP_RE = re.compile(
 MARKETPLACE_DIRECTORY_RE = re.compile(
     r"(?:"
     r"\bfind\s+(?:the\s+best\s+)?web\s+developers?\s+on\s+bark\b|"
+    r"\bhire\s+web\s+developers?\b.{0,160}\b(?:guru|freelancers?|experts?)\b|"
+    r"\bfind\s+and\s+hire\s+freelance\s+web\s+developers?\b|"
     r"\bget\s+free\s+quotes\s+now\b|\bwe['’]?ll\s+send\s+you\s+a\s+list\s+of\s+web\s+developers\b|"
     r"\bcompare\s+profiles\b.{0,100}\bread\s+previous\s+reviews\b"
     r")",
