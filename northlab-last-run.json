@@ -1,12 +1,12 @@
 {
   "status": "success",
-  "version": "2.0-hiring-vs-project-guard",
+  "version": "2.1-marketplace-visa-context-guard",
   "telegram_groups": 90,
-  "telegram_messages": 1201,
+  "telegram_messages": 1202,
   "telegram_global_queries": 22,
-  "telegram_global_messages": 190,
-  "web_raw": 230,
-  "web_accepted": 1,
+  "telegram_global_messages": 192,
+  "web_raw": 222,
+  "web_accepted": 0,
   "hub_raw": 25,
   "hub_accepted": 0,
   "hub_source_counts": {
@@ -22,8 +22,8 @@
     "no_project_signal": 670,
     "marketplace_ad": 79,
     "education": 36,
-    "bot_author": 129,
-    "duplicate_text": 270,
+    "duplicate_text": 272,
+    "bot_author": 130,
     "crypto_or_earnings_recruitment": 1,
     "job_seeker": 1,
     "employment_vacancy": 3,
@@ -32,28 +32,19 @@
     "news_content": 10
   },
   "web_rejects": {
-    "no_project_signal": 137,
-    "platform_or_product_promo": 20,
-    "weak_project_signal": 38,
-    "education": 1,
-    "employment_vacancy": 1,
-    "service_provider_promo": 1
+    "no_project_signal": 163,
+    "platform_or_product_promo": 17,
+    "weak_project_signal": 21
   },
   "hub_rejects": {
     "weak_project_signal": 7,
     "no_project_signal": 18
   },
-  "accepted_classes": {
-    "WARM PROJECT": 1
-  },
-  "project_types": {
-    "WEBSITE": 1
-  },
-  "languages": {
-    "EN": 1
-  },
-  "started_at": "2026-10-24T17:36:08.494308+00:00",
-  "completed_at": "2026-10-24T17:37:14.605471+00:00",
-  "new_leads": 1,
-  "alerts": 1
+  "accepted_classes": {},
+  "project_types": {},
+  "languages": {},
+  "started_at": "2026-10-24T17:40:19.155370+00:00",
+  "completed_at": "2026-10-24T17:41:24.000326+00:00",
+  "new_leads": 0,
+  "alerts": 0
 }
