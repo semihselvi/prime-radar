@@ -1074,6 +1074,25 @@ class BroadIntentTests(unittest.TestCase):
         self.assertIsNone(lead)
         self.assertEqual(reason, "blocked_buyer_author")
 
+    def test_ready_client_intermediary_is_rejected(self):
+        lead, reason = v6.classify_text(
+            "I am urgently looking for a 2+1 apartment in Famagusta for a ready client; the budget is between £55,000 and £65,000. The client is ready to proceed.",
+            group="СЕВЕРНЫЙ КИПР | НЕДВИЖИМОСТЬ",
+            author="@cyprus_eren",
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "agent_or_client_representative")
+
+    def test_gp_real_estate_author_is_blocked(self):
+        lead, reason = v6.classify_text(
+            "Таунхаус 3+1 с видом на море по цене £250 000. Получите полную информацию по проекту.",
+            group="GP Real Estate | Северный Кипр",
+            author="@gprealestate",
+            explicit_geo=True,
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "blocked_buyer_author")
+
 
 if __name__ == "__main__":
     unittest.main()
