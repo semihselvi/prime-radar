@@ -2,13 +2,13 @@
   "status": "success",
   "version": "2.0-hiring-vs-project-guard",
   "telegram_groups": 90,
-  "telegram_messages": 1222,
+  "telegram_messages": 1201,
   "telegram_global_queries": 22,
   "telegram_global_messages": 190,
-  "web_raw": 204,
-  "web_accepted": 0,
+  "web_raw": 230,
+  "web_accepted": 1,
   "hub_raw": 25,
-  "hub_accepted": 1,
+  "hub_accepted": 0,
   "hub_source_counts": {
     "reddit": 25,
     "bluesky": 0,
@@ -19,30 +19,32 @@
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 666,
-    "education": 31,
-    "bot_author": 153,
-    "duplicate_text": 275,
-    "marketplace_ad": 76,
-    "employment_vacancy": 4,
-    "weak_project_signal": 12,
-    "service_provider_promo": 2,
-    "news_content": 13,
-    "job_seeker": 1
+    "no_project_signal": 670,
+    "marketplace_ad": 79,
+    "education": 36,
+    "bot_author": 129,
+    "duplicate_text": 270,
+    "crypto_or_earnings_recruitment": 1,
+    "job_seeker": 1,
+    "employment_vacancy": 3,
+    "weak_project_signal": 10,
+    "service_provider_promo": 1,
+    "news_content": 10
   },
   "web_rejects": {
-    "no_project_signal": 116,
-    "platform_or_product_promo": 12,
-    "weak_project_signal": 25,
-    "education": 1
-  },
-  "hub_rejects": {
-    "weak_project_signal": 6,
-    "no_project_signal": 17,
+    "no_project_signal": 137,
+    "platform_or_product_promo": 20,
+    "weak_project_signal": 38,
+    "education": 1,
+    "employment_vacancy": 1,
     "service_provider_promo": 1
   },
+  "hub_rejects": {
+    "weak_project_signal": 7,
+    "no_project_signal": 18
+  },
   "accepted_classes": {
-    "WATCH": 1
+    "WARM PROJECT": 1
   },
   "project_types": {
     "WEBSITE": 1
@@ -50,8 +52,8 @@
   "languages": {
     "EN": 1
   },
-  "started_at": "2026-10-24T12:55:36.690458+00:00",
-  "completed_at": "2026-10-24T12:56:42.372568+00:00",
+  "started_at": "2026-10-24T17:36:08.494308+00:00",
+  "completed_at": "2026-10-24T17:37:14.605471+00:00",
   "new_leads": 1,
-  "alerts": 0
+  "alerts": 1
 }
