@@ -2,11 +2,11 @@
   "status": "success",
   "version": "2.1-marketplace-visa-context-guard",
   "telegram_groups": 90,
-  "telegram_messages": 1198,
+  "telegram_messages": 1152,
   "telegram_global_queries": 22,
-  "telegram_global_messages": 193,
-  "web_raw": 202,
-  "web_accepted": 5,
+  "telegram_global_messages": 204,
+  "web_raw": 230,
+  "web_accepted": 0,
   "hub_raw": 25,
   "hub_accepted": 0,
   "hub_source_counts": {
@@ -19,46 +19,35 @@
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 639,
-    "marketplace_ad": 82,
-    "duplicate_text": 235,
-    "education": 32,
-    "bot_author": 191,
-    "job_seeker": 2,
-    "employment_vacancy": 3,
-    "weak_project_signal": 9,
+    "no_project_signal": 597,
+    "marketplace_ad": 88,
+    "bot_author": 174,
+    "weak_project_signal": 10,
+    "duplicate_text": 262,
+    "service_provider_promo": 6,
+    "education": 21,
     "news_content": 10,
-    "service_provider_promo": 5,
+    "employment_vacancy": 2,
+    "job_seeker": 3,
     "crypto_or_earnings_recruitment": 2
   },
   "web_rejects": {
-    "no_project_signal": 143,
-    "platform_or_product_promo": 10,
-    "weak_project_signal": 12,
+    "no_project_signal": 142,
+    "platform_or_product_promo": 19,
+    "weak_project_signal": 26,
     "education": 1,
-    "community_directory": 1
+    "employment_vacancy": 1
   },
   "hub_rejects": {
-    "no_project_signal": 16,
-    "weak_project_signal": 8,
+    "weak_project_signal": 9,
+    "no_project_signal": 15,
     "existing_job_help": 1
   },
-  "accepted_classes": {
-    "WARM PROJECT": 3,
-    "HOT PROJECT": 2
-  },
-  "project_types": {
-    "WEBSITE": 5,
-    "MOBILE_APP": 1,
-    "ADMIN_PANEL": 1,
-    "ECOMMERCE": 1,
-    "SOFTWARE": 1
-  },
-  "languages": {
-    "EN": 5
-  },
-  "started_at": "2026-10-25T13:21:21.351533+00:00",
-  "completed_at": "2026-10-25T13:22:25.719658+00:00",
-  "new_leads": 5,
-  "alerts": 5
+  "accepted_classes": {},
+  "project_types": {},
+  "languages": {},
+  "started_at": "2026-10-25T17:51:52.428666+00:00",
+  "completed_at": "2026-10-25T17:52:54.589720+00:00",
+  "new_leads": 0,
+  "alerts": 0
 }
