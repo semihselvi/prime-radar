@@ -112,6 +112,28 @@ class ResaleAsyncTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(report["telegram_deleted_verified"], [])
         self.assertEqual(len(report["telegram_reposts_suppressed"]), 1)
 
+    async def test_reused_source_id_different_units_are_not_reposts(self):
+        old = {"checked_at": "2026-10-26T00:00:00+00:00", "telegram": {
+            "15944": {"id": 15944, "link": "https://t.me/h0t_real_estate/15944",
+                      "hash": "a", "source_listing_id": "2043",
+                      "excerpt": "#2043 Caesar Blue Alegrius Studio 48 m2 5 floor 60.000£",
+                      "published": "2026-10-25T10:00:00+00:00",
+                      "beds": 0, "area_m2": 48, "floor": 5, "price_gbp": 60000}
+        }, "site": {}, "oct13_catchup_complete": True}
+        current = {
+            "20000": {"id": 20000, "link": "https://t.me/h0t_real_estate/20000",
+                      "hash": "b", "source_listing_id": "2043",
+                      "excerpt": "#2043 Elysium Isatis Long Beach 3+1 183 m2 loft penthouse 235.000£",
+                      "published": "2026-10-27T10:00:00+00:00",
+                      "beds": 3, "area_m2": 183, "floor": None, "price_gbp": 235000}
+        }
+        client = type("FakeClient", (), {})()
+        client.get_messages = AsyncMock(return_value=[None])
+        report = await compare(old, {}, current, client, object())
+        self.assertEqual(len(report["telegram_new"]), 1)
+        self.assertEqual(len(report["telegram_deleted_verified"]), 1)
+        self.assertEqual(report["telegram_reposts_suppressed"], [])
+
 
 if __name__ == "__main__":
     unittest.main()
