@@ -17,7 +17,7 @@ import requests
 import main as core
 import northlab_sales_source_hub as source_hub
 
-VERSION = "2.1-marketplace-visa-context-guard"
+VERSION = "2.2-provider-community-individual-guard"
 COLLECTION = "northlab_sales_project_leads"
 SCAN_COLLECTION = "northlab_sales_project_scans"
 TELEGRAM_HOURS = int(os.getenv("NORTHLAB_TELEGRAM_HOURS", "24"))
@@ -222,6 +222,10 @@ RECRUITMENT_PARTNER_RE = re.compile(
 
 SERVICE_PROVIDER_PROMO_RE = re.compile(
     r"(?:"
+    r"\bi['’]?m\s+(?:a\s+)?web\s+developer\b|"
+    r"\bweb\s*&?\s*wordpress\s+developer\b|"
+    r"\bhere['’]?s\s+what\s+i\s+can\s+help\s+you\s+with\b|"
+    r"\blooking\s+for\s+a\s+professional\s+(?:website|mobile\s+app)\b.{0,140}\b(?:i\s+can\s+help|developer|wordpress|android)\b|"
     r"\bfor\s+hire\b|\bavailable\s+for\s+(?:hire|projects?|freelance\s+work)\b|"
     r"\b(?:i|we)\s+(?:can|will)\s+(?:build|create|develop|design|fix|enhance|automate)\b|"
     r"\b(?:i|we)\s+help\s+(?:businesses|companies|clients)\b|"
@@ -318,10 +322,22 @@ MARKETPLACE_DIRECTORY_RE = re.compile(
 
 COMMUNITY_DIRECTORY_RE = re.compile(
     r"(?:"
+    r"\bthis\s+group\s+connects\b.{0,180}\b(?:business\s+owners|entrepreneurs|startups?|sellers?)\b.{0,180}\b(?:developers?|designers?|support)\b|"
+    r"\blooking\s+to\s+hire\s+a\s+website\s+(?:designer|developer)\b.{0,180}\bthis\s+group\b|"
     r"\bthis\s+group\s+is\s+(?:created|for)\b.{0,180}\b(?:talents?|needs?|developers?|designers?|freelancers?)\b|"
     r"\bpost\s+(?:your|the)\s+(?:talents?|needs?|jobs?|projects?)\b|"
     r"\bgroup\s+(?:for|of)\s+(?:web\s+)?(?:developers?|designers?|freelancers?|clients?)\b|"
     r"\bcommunity\s+(?:for|of)\s+(?:web\s+)?(?:developers?|designers?|freelancers?)\b"
+    r")",
+    re.I | re.S,
+)
+
+INDIVIDUAL_ONLY_CONTRACT_RE = re.compile(
+    r"(?:"
+    r"\bnot\s+an\s+agency\b|"
+    r"\bnot\s+(?:a\s+)?white[-\s]?label\s+team\b|"
+    r"\blooking\s+for\s+an\s+individual\s+developer\b|"
+    r"\bindividual\s+developer\s*,?\s+not\s+an\s+agency\b"
     r")",
     re.I | re.S,
 )
@@ -465,6 +481,8 @@ def classify(text: str) -> tuple[dict[str, Any] | None, str]:
         return None, "generic_support_thread"
     if ADVICE_ONLY_NOT_HIRING_RE.search(value):
         return None, "advice_only_not_hiring"
+    if INDIVIDUAL_ONLY_CONTRACT_RE.search(value):
+        return None, "individual_only_contract"
     if PORTAL_SUPPORT_RE.search(value):
         return None, "portal_account_support"
     if DOCUMENT_ACCOUNT_CONTEXT_RE.search(value) and re.search(r"личн\w*\s+кабинет|account|hesap", value, re.I):
