@@ -197,6 +197,27 @@ class NorthlabSalesRadarTests(unittest.TestCase):
         self.assertIsNone(lead)
         self.assertEqual(reason, "reference_site_mention")
 
+    def test_facebook_service_provider_promo_is_rejected(self):
+        lead, reason = radar.classify(
+            "I'm a Web Developer with 3+ years of experience creating modern websites. Here's what I can help you with: WordPress, Full-Stack, E-commerce and Admin Panels."
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "service_provider_promo")
+
+    def test_facebook_group_connector_description_is_rejected(self):
+        lead, reason = radar.classify(
+            "Looking to hire a website designer or developer for your business? This group connects business owners, entrepreneurs, startups, and online sellers with professional website design and development support."
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "community_directory")
+
+    def test_individual_only_framer_contract_is_not_northlab_lead(self):
+        lead, reason = radar.classify(
+            "The team is looking for an intermediate to advanced Framer developer on a per-project contract basis. We are looking for an individual developer, not an agency or a white-label team."
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "individual_only_contract")
+
 
 if __name__ == "__main__":
     unittest.main()
