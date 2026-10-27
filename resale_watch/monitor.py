@@ -177,6 +177,21 @@ def project_terms(title):
     return [t for t in tokens if t not in generic and len(t) >= 2]
 
 
+def repost_unit_fingerprint(item):
+    """Conservative fingerprint for deciding whether reused source ids are the same unit."""
+    text = normalized(item.get("excerpt") or "")
+    # Ignore price so a repriced repost can still pair, but retain project/unit words.
+    text = re.sub(r"\b\d{4,6}\b", " ", text)
+    tokens = [t for t in text.split() if t not in {"two","one","three","studio"}]
+    project_tokens = tuple(tokens[:8])
+    return (
+        item.get("beds"),
+        item.get("area_m2"),
+        item.get("floor"),
+        project_tokens,
+    )
+
+
 def possible_site_matches(message, sites):
     text = normalized(message["excerpt"])
     matches = []
