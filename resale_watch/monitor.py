@@ -192,6 +192,37 @@ def repost_unit_fingerprint(item):
     )
 
 
+
+def same_unit_for_repost(old_item, new_item):
+    """A reused #source ID alone is never proof of the same apartment."""
+    if not old_item.get("source_listing_id") or old_item.get("source_listing_id") != new_item.get("source_listing_id"):
+        return False
+    # Require matching unit dimensions, not merely the seller's reused #number.
+    for field in ("beds", "area_m2"):
+        left, right = old_item.get(field), new_item.get(field)
+        if left is None or right is None or left != right:
+            return False
+    left_floor, right_floor = old_item.get("floor"), new_item.get("floor")
+    if left_floor is not None and right_floor is not None and left_floor != right_floor:
+        return False
+
+    # Geography, generic project prefixes and listing vocabulary cannot
+    # distinguish two apartments in different blocks of the same development.
+    generic = {
+        "caesar", "blue", "resort", "royal", "sun", "long", "beach",
+        "iskele", "bogaz", "safakoy", "north", "cyprus", "kibris",
+        "studio", "stüdyo", "one", "two", "three", "four", "loft",
+        "floor", "kat", "katta", "metrekare", "m2", "daire",
+        "sale", "satilik", "for", "with", "and", "the",
+    }
+    def identifying_words(item):
+        text = normalized(item.get("excerpt") or "")
+        return {word for word in text.split()
+                if len(word) >= 4 and not word.isdecimal() and word not in generic}
+    # No confident project/block overlap => do not suppress a new message.
+    return bool(identifying_words(old_item) & identifying_words(new_item))
+
+
 def possible_site_matches(message, sites):
     text = normalized(message["excerpt"])
     matches = []
@@ -267,7 +298,8 @@ async def compare(previous, sites, current, client, entity):
     for item in new:
         bucket = removed_by_hash.get(item.get("hash")) or []
         if not bucket and item.get("source_listing_id"):
-            bucket = removed_by_source_id.get(item.get("source_listing_id")) or []
+            bucket = [old for old in removed_by_source_id.get(item["source_listing_id"], [])
+                      if same_unit_for_repost(old, item)]
         old_item = next((x for x in bucket if x.get("id") not in paired_removed_ids), None)
         if old_item:
             paired_removed_ids.add(old_item.get("id"))
