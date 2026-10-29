@@ -1,10 +1,10 @@
 {
   "status": "completed",
-  "scanned_at": "2026-10-29T19:35:59.910679+00:00",
+  "scanned_at": "2026-10-29T23:58:06.273852+00:00",
   "groups": 119,
-  "messages": 20450,
-  "matches": 25,
-  "niche_studio": 12,
+  "messages": 20461,
+  "matches": 24,
+  "niche_studio": 11,
   "one_bed": 13,
   "unlinked": 0,
   "errors": 0,
@@ -91,12 +91,6 @@
       "kind": "1+1",
       "date": "2026-10-26T12:38:02+00:00",
       "url": "https://t.me/severnyy_kipr_chat/181720",
-      "price_mentions": []
-    },
-    {
-      "kind": "niche_studio",
-      "date": "2026-10-26T06:10:22+00:00",
-      "url": "https://t.me/cyprusprop/980353",
       "price_mentions": []
     },
     {
