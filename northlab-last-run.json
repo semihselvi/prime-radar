@@ -2,10 +2,10 @@
   "status": "success",
   "version": "2.2-provider-community-individual-guard",
   "telegram_groups": 90,
-  "telegram_messages": 1282,
+  "telegram_messages": 1240,
   "telegram_global_queries": 22,
   "telegram_global_messages": 205,
-  "web_raw": 227,
+  "web_raw": 230,
   "web_accepted": 0,
   "hub_raw": 25,
   "hub_accepted": 1,
@@ -19,21 +19,22 @@
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 695,
-    "marketplace_ad": 86,
-    "education": 37,
-    "bot_author": 154,
-    "duplicate_text": 318,
+    "no_project_signal": 664,
+    "marketplace_ad": 80,
+    "education": 32,
+    "duplicate_text": 319,
+    "bot_author": 150,
     "service_provider_promo": 5,
-    "crypto_or_earnings_recruitment": 2,
-    "weak_project_signal": 7,
-    "job_seeker": 1,
-    "employment_vacancy": 1
+    "weak_project_signal": 6,
+    "news_content": 1,
+    "employment_vacancy": 4,
+    "crypto_or_earnings_recruitment": 1,
+    "job_seeker": 2
   },
   "web_rejects": {
-    "no_project_signal": 130,
-    "platform_or_product_promo": 24,
-    "weak_project_signal": 38,
+    "no_project_signal": 154,
+    "platform_or_product_promo": 17,
+    "weak_project_signal": 23,
     "education": 1,
     "service_provider_promo": 2,
     "marketplace_directory": 2
@@ -51,8 +52,8 @@
   "languages": {
     "EN": 1
   },
-  "started_at": "2026-10-29T00:23:02.658290+00:00",
-  "completed_at": "2026-10-29T00:24:06.040697+00:00",
+  "started_at": "2026-10-29T08:54:27.987970+00:00",
+  "completed_at": "2026-10-29T08:55:31.566860+00:00",
   "new_leads": 0,
   "alerts": 0
 }
