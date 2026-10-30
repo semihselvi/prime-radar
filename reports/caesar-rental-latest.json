@@ -1,14 +1,20 @@
 {
   "status": "completed",
-  "scanned_at": "2026-10-30T19:16:05.123580+00:00",
+  "scanned_at": "2026-10-30T23:42:13.662339+00:00",
   "groups": 119,
-  "messages": 20466,
-  "matches": 20,
+  "messages": 20519,
+  "matches": 21,
   "niche_studio": 8,
-  "one_bed": 12,
+  "one_bed": 13,
   "unlinked": 0,
   "errors": 0,
   "public_offers": [
+    {
+      "kind": "1+1",
+      "date": "2026-10-30T22:09:11+00:00",
+      "url": "https://t.me/iskele_LongBeach/331670",
+      "price_mentions": []
+    },
     {
       "kind": "niche_studio",
       "date": "2026-10-29T17:49:44+00:00",
