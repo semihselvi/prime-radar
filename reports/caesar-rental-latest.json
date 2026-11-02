@@ -1,11 +1,11 @@
 {
   "status": "completed",
-  "scanned_at": "2026-11-02T15:40:02.034967+00:00",
+  "scanned_at": "2026-11-02T23:29:40.150606+00:00",
   "groups": 119,
-  "messages": 20440,
-  "matches": 22,
+  "messages": 20426,
+  "matches": 21,
   "niche_studio": 9,
-  "one_bed": 13,
+  "one_bed": 12,
   "unlinked": 0,
   "errors": 0,
   "public_offers": [
@@ -135,12 +135,6 @@
       "kind": "1+1",
       "date": "2026-10-05T11:03:50+00:00",
       "url": "https://t.me/iskele_LongBeach/329075",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
-      "date": "2026-10-05T10:58:11+00:00",
-      "url": "https://t.me/Kibris_Cyprus/275140",
       "price_mentions": []
     }
   ],
