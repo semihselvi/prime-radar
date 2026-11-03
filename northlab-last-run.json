@@ -2,10 +2,10 @@
   "status": "success",
   "version": "2.2-provider-community-individual-guard",
   "telegram_groups": 90,
-  "telegram_messages": 1223,
+  "telegram_messages": 1198,
   "telegram_global_queries": 22,
-  "telegram_global_messages": 205,
-  "web_raw": 224,
+  "telegram_global_messages": 206,
+  "web_raw": 212,
   "web_accepted": 0,
   "hub_raw": 125,
   "hub_accepted": 1,
@@ -19,26 +19,27 @@
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 622,
-    "weak_project_signal": 11,
-    "marketplace_ad": 76,
-    "duplicate_text": 322,
-    "employment_vacancy": 7,
-    "job_seeker": 4,
-    "education": 31,
-    "news_content": 7,
-    "bot_author": 156,
-    "service_provider_promo": 3
+    "no_project_signal": 636,
+    "marketplace_ad": 80,
+    "duplicate_text": 298,
+    "bot_author": 160,
+    "weak_project_signal": 5,
+    "news_content": 2,
+    "service_provider_promo": 2,
+    "education": 26,
+    "employment_vacancy": 5,
+    "portal_account_support": 1
   },
   "web_rejects": {
-    "no_project_signal": 137,
-    "platform_or_product_promo": 17,
-    "weak_project_signal": 17,
-    "education": 1
+    "no_project_signal": 133,
+    "platform_or_product_promo": 13,
+    "weak_project_signal": 22,
+    "education": 2,
+    "employment_vacancy": 3
   },
   "hub_rejects": {
-    "no_project_signal": 80,
-    "weak_project_signal": 32,
+    "weak_project_signal": 33,
+    "no_project_signal": 79,
     "existing_job_help": 1,
     "education": 10,
     "reference_site_mention": 1
@@ -52,8 +53,8 @@
   "languages": {
     "EN": 1
   },
-  "started_at": "2026-11-03T10:03:54.145409+00:00",
-  "completed_at": "2026-11-03T10:05:03.611355+00:00",
+  "started_at": "2026-11-03T16:32:10.550409+00:00",
+  "completed_at": "2026-11-03T16:33:17.489047+00:00",
   "new_leads": 1,
   "alerts": 1
 }
