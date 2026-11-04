@@ -218,6 +218,15 @@ class NorthlabSalesRadarTests(unittest.TestCase):
         self.assertIsNone(lead)
         self.assertEqual(reason, "individual_only_contract")
 
+    def test_reddit_developer_showcase_is_not_project(self):
+        lead, reason = radar.classify(
+            "Three years ago I posted this and that website is still being actively developed. "
+            "I haven't used any AI-generated code or external libraries. "
+            "Anyway this is just me saying that I'm still here."
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "developer_showcase")
+
 
 if __name__ == "__main__":
     unittest.main()
