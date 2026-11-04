@@ -1,14 +1,20 @@
 {
   "status": "completed",
-  "scanned_at": "2026-11-04T02:13:43.108584+00:00",
+  "scanned_at": "2026-11-04T09:07:41.134736+00:00",
   "groups": 119,
-  "messages": 20430,
-  "matches": 21,
+  "messages": 20358,
+  "matches": 22,
   "niche_studio": 9,
-  "one_bed": 12,
+  "one_bed": 13,
   "unlinked": 0,
   "errors": 0,
   "public_offers": [
+    {
+      "kind": "1+1",
+      "date": "2026-11-04T06:20:16+00:00",
+      "url": "https://t.me/cyprusprop/982120",
+      "price_mentions": []
+    },
     {
       "kind": "1+1",
       "date": "2026-11-03T13:35:45+00:00",
