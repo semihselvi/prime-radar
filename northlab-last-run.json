@@ -2,13 +2,13 @@
   "status": "success",
   "version": "2.2-provider-community-individual-guard",
   "telegram_groups": 90,
-  "telegram_messages": 1204,
+  "telegram_messages": 1215,
   "telegram_global_queries": 22,
   "telegram_global_messages": 207,
-  "web_raw": 215,
+  "web_raw": 230,
   "web_accepted": 0,
   "hub_raw": 25,
-  "hub_accepted": 0,
+  "hub_accepted": 1,
   "hub_source_counts": {
     "reddit": 25,
     "bluesky": 0,
@@ -19,34 +19,40 @@
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 729,
-    "marketplace_ad": 62,
-    "duplicate_text": 234,
-    "education": 35,
-    "crypto_or_earnings_recruitment": 1,
-    "news_content": 2,
-    "job_seeker": 2,
-    "weak_project_signal": 11,
-    "bot_author": 139,
+    "no_project_signal": 711,
+    "marketplace_ad": 73,
+    "duplicate_text": 264,
+    "education": 28,
+    "weak_project_signal": 13,
+    "bot_author": 128,
+    "job_seeker": 6,
+    "news_content": 3,
     "service_provider_promo": 4,
-    "portal_account_support": 1,
-    "employment_vacancy": 2
+    "employment_vacancy": 3
   },
   "web_rejects": {
-    "no_project_signal": 123,
-    "platform_or_product_promo": 11,
-    "weak_project_signal": 27,
-    "education": 3
+    "no_project_signal": 142,
+    "platform_or_product_promo": 18,
+    "weak_project_signal": 24,
+    "education": 2,
+    "service_provider_promo": 1,
+    "employment_vacancy": 2
   },
   "hub_rejects": {
-    "no_project_signal": 16,
-    "weak_project_signal": 9
+    "weak_project_signal": 8,
+    "no_project_signal": 16
   },
-  "accepted_classes": {},
-  "project_types": {},
-  "languages": {},
-  "started_at": "2026-11-04T09:50:29.249404+00:00",
-  "completed_at": "2026-11-04T09:51:31.753324+00:00",
-  "new_leads": 0,
-  "alerts": 0
+  "accepted_classes": {
+    "WARM PROJECT": 1
+  },
+  "project_types": {
+    "WEBSITE": 1
+  },
+  "languages": {
+    "EN": 1
+  },
+  "started_at": "2026-11-04T16:34:35.699053+00:00",
+  "completed_at": "2026-11-04T16:35:38.908697+00:00",
+  "new_leads": 1,
+  "alerts": 1
 }
