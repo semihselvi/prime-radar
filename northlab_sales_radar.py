@@ -17,7 +17,7 @@ import requests
 import main as core
 import northlab_sales_source_hub as source_hub
 
-VERSION = "2.2-provider-community-individual-guard"
+VERSION = "2.3-developer-showcase-guard"
 COLLECTION = "northlab_sales_project_leads"
 SCAN_COLLECTION = "northlab_sales_project_scans"
 TELEGRAM_HOURS = int(os.getenv("NORTHLAB_TELEGRAM_HOURS", "24"))
@@ -299,6 +299,18 @@ REFERENCE_SITE_MENTION_RE = re.compile(
     re.I | re.S,
 )
 
+DEVELOPER_SHOWCASE_RE = re.compile(
+    r"(?:"
+    r"\bi\s+(?:coded|built|developed|created)\s+(?:a|this|the)\s+(?:site|website|web\s*site|app)\b|"
+    r"\bthat\s+website\s+is\s+still\s+being\s+actively\s+developed\b|"
+    r"\bi\s+haven['’]?t\s+used\s+any\s+ai[-\s]?generated\s+code\b|"
+    r"\bwithout\s+any\s+(?:ai|frameworks?|libraries)\b|"
+    r"\bthis\s+is\s+just\s+me\s+saying\b|"
+    r"\bdevelopment\s+mostly\s+consists\s+of\b"
+    r")",
+    re.I | re.S,
+)
+
 EXISTING_JOB_HELP_RE = re.compile(
     r"(?:"
     r"\b(?:my|a)\s+(?:client|friend|customer|barber)\s+(?:has\s+)?asked\s+me\s+to\s+(?:create|build|develop|design)\b|"
@@ -469,6 +481,8 @@ def classify(text: str) -> tuple[dict[str, Any] | None, str]:
         return None, "provider_pricing_or_existing_client"
     if SERVICE_PROVIDER_PROMO_RE.search(value):
         return None, "service_provider_promo"
+    if DEVELOPER_SHOWCASE_RE.search(value):
+        return None, "developer_showcase"
     if REFERENCE_SITE_MENTION_RE.search(value):
         return None, "reference_site_mention"
     if EXISTING_JOB_HELP_RE.search(value):
