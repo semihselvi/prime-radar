@@ -1,10 +1,10 @@
 {
   "status": "completed",
-  "scanned_at": "2026-11-05T16:27:57.392259+00:00",
+  "scanned_at": "2026-11-05T23:37:14.928224+00:00",
   "groups": 120,
-  "messages": 20446,
-  "matches": 25,
-  "niche_studio": 11,
+  "messages": 20456,
+  "matches": 24,
+  "niche_studio": 10,
   "one_bed": 14,
   "unlinked": 0,
   "errors": 0,
@@ -151,12 +151,6 @@
       "kind": "1+1",
       "date": "2026-10-13T06:57:38+00:00",
       "url": "https://t.me/Kibris_Cyprus/275698",
-      "price_mentions": []
-    },
-    {
-      "kind": "niche_studio",
-      "date": "2026-10-11T13:57:19+00:00",
-      "url": "https://t.me/Kibris_Cyprus/275569",
       "price_mentions": []
     }
   ],
