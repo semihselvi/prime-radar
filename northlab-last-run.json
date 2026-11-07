@@ -2,11 +2,11 @@
   "status": "success",
   "version": "2.3-developer-showcase-guard",
   "telegram_groups": 90,
-  "telegram_messages": 971,
+  "telegram_messages": 984,
   "telegram_global_queries": 22,
   "telegram_global_messages": 218,
-  "web_raw": 215,
-  "web_accepted": 1,
+  "web_raw": 229,
+  "web_accepted": 0,
   "hub_raw": 125,
   "hub_accepted": 1,
   "hub_source_counts": {
@@ -19,45 +19,40 @@
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 546,
-    "marketplace_ad": 58,
-    "duplicate_text": 209,
-    "job_seeker": 2,
-    "education": 35,
-    "weak_project_signal": 11,
-    "bot_author": 121,
-    "crypto_or_earnings_recruitment": 1,
-    "news_content": 13
+    "no_project_signal": 559,
+    "marketplace_ad": 57,
+    "duplicate_text": 201,
+    "bot_author": 124,
+    "weak_project_signal": 13,
+    "education": 37,
+    "news_content": 13,
+    "job_seeker": 3,
+    "crypto_or_earnings_recruitment": 2
   },
   "web_rejects": {
-    "no_project_signal": 138,
-    "platform_or_product_promo": 15,
-    "weak_project_signal": 22,
-    "education": 1,
-    "employment_vacancy": 3,
-    "service_provider_promo": 2,
-    "marketplace_directory": 2
+    "no_project_signal": 147,
+    "platform_or_product_promo": 21,
+    "weak_project_signal": 19,
+    "education": 1
   },
   "hub_rejects": {
-    "no_project_signal": 79,
-    "weak_project_signal": 29,
+    "no_project_signal": 84,
+    "weak_project_signal": 28,
     "employment_vacancy": 1,
-    "existing_job_help": 3,
-    "education": 11,
+    "education": 10,
     "reference_site_mention": 1
   },
   "accepted_classes": {
-    "WARM PROJECT": 1,
     "HOT PROJECT": 1
   },
   "project_types": {
-    "WEBSITE": 2
+    "WEBSITE": 1
   },
   "languages": {
-    "EN": 2
+    "EN": 1
   },
-  "started_at": "2026-11-07T19:03:19.738070+00:00",
-  "completed_at": "2026-11-07T19:04:31.683872+00:00",
+  "started_at": "2026-11-07T23:56:30.021402+00:00",
+  "completed_at": "2026-11-07T23:57:37.640777+00:00",
   "new_leads": 0,
   "alerts": 0
 }
