@@ -2,57 +2,49 @@
   "status": "success",
   "version": "2.3-developer-showcase-guard",
   "telegram_groups": 90,
-  "telegram_messages": 984,
+  "telegram_messages": 999,
   "telegram_global_queries": 22,
   "telegram_global_messages": 218,
-  "web_raw": 229,
+  "web_raw": 205,
   "web_accepted": 0,
-  "hub_raw": 125,
-  "hub_accepted": 1,
+  "hub_raw": 25,
+  "hub_accepted": 0,
   "hub_source_counts": {
     "reddit": 25,
     "bluesky": 0,
-    "youtube": 100,
+    "youtube": 0,
     "forums": 0
   },
-  "hub_youtube_urls": 1,
+  "hub_youtube_urls": 0,
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 559,
-    "marketplace_ad": 57,
-    "duplicate_text": 201,
-    "bot_author": 124,
-    "weak_project_signal": 13,
-    "education": 37,
+    "no_project_signal": 595,
+    "marketplace_ad": 54,
+    "duplicate_text": 194,
+    "education": 39,
+    "crypto_or_earnings_recruitment": 2,
+    "bot_author": 114,
+    "weak_project_signal": 11,
     "news_content": 13,
-    "job_seeker": 3,
-    "crypto_or_earnings_recruitment": 2
+    "job_seeker": 2
   },
   "web_rejects": {
-    "no_project_signal": 147,
-    "platform_or_product_promo": 21,
-    "weak_project_signal": 19,
-    "education": 1
+    "no_project_signal": 142,
+    "platform_or_product_promo": 20,
+    "weak_project_signal": 26,
+    "service_provider_promo": 1
   },
   "hub_rejects": {
-    "no_project_signal": 84,
-    "weak_project_signal": 28,
-    "employment_vacancy": 1,
-    "education": 10,
-    "reference_site_mention": 1
+    "weak_project_signal": 5,
+    "no_project_signal": 19,
+    "employment_vacancy": 1
   },
-  "accepted_classes": {
-    "HOT PROJECT": 1
-  },
-  "project_types": {
-    "WEBSITE": 1
-  },
-  "languages": {
-    "EN": 1
-  },
-  "started_at": "2026-11-07T23:56:30.021402+00:00",
-  "completed_at": "2026-11-07T23:57:37.640777+00:00",
+  "accepted_classes": {},
+  "project_types": {},
+  "languages": {},
+  "started_at": "2026-11-08T09:27:44.608786+00:00",
+  "completed_at": "2026-11-08T09:28:43.549598+00:00",
   "new_leads": 0,
   "alerts": 0
 }
