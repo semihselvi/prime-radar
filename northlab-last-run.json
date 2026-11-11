@@ -2,57 +2,59 @@
   "status": "success",
   "version": "2.3-developer-showcase-guard",
   "telegram_groups": 90,
-  "telegram_messages": 1185,
+  "telegram_messages": 1157,
   "telegram_global_queries": 22,
-  "telegram_global_messages": 219,
-  "web_raw": 198,
-  "web_accepted": 5,
-  "hub_raw": 25,
-  "hub_accepted": 0,
+  "telegram_global_messages": 224,
+  "web_raw": 230,
+  "web_accepted": 0,
+  "hub_raw": 125,
+  "hub_accepted": 1,
   "hub_source_counts": {
     "reddit": 25,
     "bluesky": 0,
-    "youtube": 0,
+    "youtube": 100,
     "forums": 0
   },
-  "hub_youtube_urls": 0,
+  "hub_youtube_urls": 1,
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 707,
-    "marketplace_ad": 65,
-    "education": 26,
-    "bot_author": 166,
-    "duplicate_text": 215,
-    "news_content": 4,
+    "no_project_signal": 668,
+    "duplicate_text": 216,
+    "marketplace_ad": 64,
+    "bot_author": 177,
+    "weak_project_signal": 12,
     "service_provider_promo": 1,
-    "weak_project_signal": 11,
-    "job_seeker": 1,
-    "employment_vacancy": 3
+    "education": 30,
+    "employment_vacancy": 4,
+    "news_content": 1,
+    "crypto_or_earnings_recruitment": 2,
+    "job_seeker": 1
   },
   "web_rejects": {
-    "no_project_signal": 124,
-    "platform_or_product_promo": 8,
-    "weak_project_signal": 23,
-    "education": 1
+    "no_project_signal": 150,
+    "platform_or_product_promo": 12,
+    "weak_project_signal": 25,
+    "education": 1,
+    "employment_vacancy": 1
   },
   "hub_rejects": {
-    "no_project_signal": 18,
-    "weak_project_signal": 6,
-    "education": 1
+    "no_project_signal": 83,
+    "weak_project_signal": 29,
+    "education": 11,
+    "reference_site_mention": 1
   },
   "accepted_classes": {
-    "WARM PROJECT": 4,
     "HOT PROJECT": 1
   },
   "project_types": {
-    "WEBSITE": 5
+    "WEBSITE": 1
   },
   "languages": {
-    "EN": 5
+    "EN": 1
   },
-  "started_at": "2026-11-11T16:35:43.777258+00:00",
-  "completed_at": "2026-11-11T16:36:57.333365+00:00",
-  "new_leads": 5,
-  "alerts": 5
+  "started_at": "2026-11-11T21:32:46.790937+00:00",
+  "completed_at": "2026-11-11T21:33:56.045182+00:00",
+  "new_leads": 0,
+  "alerts": 0
 }
