@@ -624,7 +624,7 @@ AGENT_PURCHASE_RE = re.compile(
 
 def is_partner_purchase_request(text: str) -> bool:
     """Allow only clearly purchase-side agency requests, never generic broker posts."""
-    if not (AGENT_OR_CLIENT_REP_RE.search(text) or AGENT_IDENTITY_RE.search(text) or AGENT_CLIENT_RE.search(text)):
+    if not (AGENT_OR_CLIENT_REP_RE.search(text) or AGENT_IDENTITY_RE.search(text) or AGENT_CLIENT_RE.search(text) or AGENT_PURCHASE_RE.search(text)):
         return False
     if not (PROPERTY_RE.search(text) or NC_PROJECT_RE.search(text)):
         return False
