@@ -1345,6 +1345,7 @@ TELEGRAM_BOOTSTRAP_DISCUSSION_SEEDS = (
     "cyprusforum",
     "northern_cyprus_forum",
     "NCyprus_Iskele",
+    "sharabara2026",  # Public lead source; preview only, never auto-join
 )
 
 # Group discovery terms are intentionally multilingual. We search Telegram's
