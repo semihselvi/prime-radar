@@ -2647,7 +2647,9 @@ async def broad_telegram_scan(db_client, started):
                     text,
                     group=seed_title if seed_direct_north else "",
                     author=author,
-                    explicit_geo=explicit_geo,
+                    # Verified local usernames can provide geography even when
+                    # their display title lacks the words "North Cyprus".
+                    explicit_geo=bool(explicit_geo or seed_direct_north),
                 )
                 if signal is None:
                     continue
