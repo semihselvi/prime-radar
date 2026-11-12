@@ -1152,5 +1152,99 @@ class PrimeBuyerRecallRegressionTests(unittest.TestCase):
         self.assertEqual(reason, "blocked_buyer_author")
 
 
+class PrimeProjectAliasTests(unittest.TestCase):
+    """All requested projects should resolve without a separate property word."""
+
+    PROJECTS = (
+        ("Courtyard", "Courtyard"),
+        ("Abelia", "Abelia"),
+        ("River Side", "Riverside"),
+        ("Park Residence", "Park Residence"),
+        ("Royal Sun", "Royal Sun"),
+        ("Royal Sun Elite", "Royal Sun Elite"),
+        ("Neo Residence", "Neo Residence"),
+        ("Four Seasons", "Four Seasons"),
+        ("Sun Rise", "Sunrise"),
+        ("Orchard", "Orchard"),
+        ("Elsyium 1", "Elysium 1"),
+        ("Elysium 2", "Elysium 2"),
+        ("Fiora", "Fiora"),
+    )
+
+    def test_all_thirteen_projects_are_buyable_with_north_cyprus_context(self):
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            for query, canonical in self.PROJECTS:
+                text = f"Looking to buy in {query}."
+                with self.subTest(project=canonical):
+                    signal, reason = v6.classify_text(text, group="North Cyprus Expats")
+                    self.assertIsNotNone(signal, (query, reason))
+                    self.assertEqual(signal["intent_type"], "BUYER")
+                    self.assertEqual(signal["estimated_project"], canonical)
+                    self.assertTrue(v6.NC_PROJECT_RE.search(query))
+                    self.assertTrue(v6.candidate_signal(text))
+
+    def test_variants_and_priority(self):
+        cases = (
+            ("River-Side", "Riverside"),
+            ("Riverside", "Riverside"),
+            ("SUNRISE", "Sunrise"),
+            ("elsyium II", "Elysium 2"),
+            ("Elysium I", "Elysium 1"),
+            ("Royal Sun Elite", "Royal Sun Elite"),
+            ("роял сан", "Royal Sun"),
+            ("фиора", "Fiora"),
+            ("парк резиденс", "Park Residence"),
+        )
+        for phrase, canonical in cases:
+            with self.subTest(phrase=phrase):
+                self.assertEqual(v6.extract_project(phrase), canonical)
+
+    def test_ambiguous_global_names_do_not_count_as_location(self):
+        for phrase in (
+            "Courtyard", "Orchard", "Four Seasons", "Riverside",
+            "Park Residence", "Royal Sun", "Neo Residence", "Sunrise",
+            "Abelia", "Fiora", "Elsyium 1", "Elysium 2",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertFalse(v6.has_nc_geo(phrase))
+                signal, reason = v6.classify_text(
+                    f"Looking to buy in {phrase}.", group="International Investments"
+                )
+                self.assertIsNone(signal)
+                self.assertEqual(reason, "no_north_context")
+
+    def test_explicit_geography_and_distinctive_project_recognized(self):
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            for text in (
+                "İskele Royal Sun 2+1 daire satın almak istiyorum.",
+                "Looking to buy in Royal Sun Elite.",
+                "Куплю квартиру в Grand Sapphire.",
+            ):
+                with self.subTest(text=text):
+                    signal, reason = v6.classify_text(text, group="")
+                    self.assertIsNotNone(signal, reason)
+                    self.assertEqual(signal["intent_type"], "BUYER")
+
+    def test_project_purchase_demand_not_sale_or_rent(self):
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            for text in (
+                "Looking to rent a studio in Orchard.",
+                "Royal Sun Elite apartment FOR SALE £150000",
+            ):
+                with self.subTest(text=text):
+                    lead, reason = v6.classify_text(text, group="North Cyprus Property")
+                    self.assertIsNone(lead, reason)
+
+    def test_all_projects_have_global_discovery_queries(self):
+        queries = v6.TELEGRAM_PROJECT_SEARCH_QUERIES
+        self.assertEqual(len(queries), 13)
+        self.assertEqual(len(set(queries)), 13)
+        for query, _ in self.PROJECTS:
+            self.assertTrue(
+                any(v6.extract_project(phrase) == v6.extract_project(query) for phrase in queries),
+                query,
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
