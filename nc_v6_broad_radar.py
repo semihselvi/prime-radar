@@ -3205,7 +3205,15 @@ def _buyer_only_message_allowed(message: str) -> bool:
         "PUBLIC WEB",
         "YOUTUBE BUYER",
     )
-    if any(token in upper for token in blocked):
+    # Public-web diagnostics are blocked, but genuine purchase notifications
+    # carry [PUBLIC WEB] in their header. Blocking both discarded real buyers.
+    buyer_notification = (
+        "PRIME BUYER RADAR |" in upper
+        and ("HOT BUYER" in upper or "WARM BUYER" in upper)
+    )
+    if "PUBLIC WEB" in upper and not buyer_notification:
+        return False
+    if any(token in upper for token in blocked if token != "PUBLIC WEB"):
         return False
     return True
 
