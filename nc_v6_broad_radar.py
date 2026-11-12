@@ -70,7 +70,9 @@ NC_PROJECT_RE = re.compile(
 NC_PROJECT_GEO_RE = re.compile(
     r"(?:\bcaesar\s+(?:resort|blue)\b|\bgrand\s+sapphire\b|"
     r"\bцезарь\s+резорт\b|\bгранд\s+сапфир\w*\b|"
-    r"\broyal\s*sun\s*elite\b|\bроял(?:ь)?\s+сан\s+элит\b)",
+    r"\broyal\s*sun\s*elite\b|\bроял(?:ь)?\s+сан\s+элит\b|"
+    r"\broyal\s*sun\s*residen(?:ce|ces)\b|\bроял(?:ь)?\s+сан\s+резиденс\b|"
+    r"\b(?:four|4)\s+seasons\s+life\b|\bфор\s+сизонс\s+лайф\b)",
     re.I,
 )
 
