@@ -128,6 +128,8 @@ async def scan_once() -> dict[str, Any]:
     db = radar.core.db()
 
     result = await radar.broad_telegram_scan(db, started)
+    if str(result.get("status") or "").startswith("skipped"):
+        raise RuntimeError("PRIME_BUYER_TELEGRAM_SCAN_UNAVAILABLE: " + str(result.get("status")))
     raw = list(result.get("new_leads") or [])
     buyers = [lead for lead in raw if is_actionable_buyer(lead)]
 
