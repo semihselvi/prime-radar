@@ -41,6 +41,7 @@ class PrimeBuyerSourceBootstrapTests(unittest.TestCase):
     def test_public_discussion_bootstrap_without_joining(self):
         seeds = radar.TELEGRAM_BOOTSTRAP_DISCUSSION_SEEDS
         self.assertIn("cyprusforum", seeds)
+        self.assertIn("sharabara2026", seeds)
         self.assertIn("northern_cyprus_forum", seeds)
         self.assertIn("NCyprus_Iskele", seeds)
         self.assertEqual(len(seeds), len(set(seeds)))
