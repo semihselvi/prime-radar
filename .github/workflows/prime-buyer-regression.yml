@@ -1,0 +1,37 @@
+name: PRIME Buyer - Regression Checks
+
+on:
+  pull_request:
+    branches: [production/radar]
+    paths:
+      - "main.py"
+      - "nc_v6_broad_radar.py"
+      - "northlab_lead_radar_core.py"
+      - "test_nc_v6_broad_radar.py"
+      - "test_northlab_lead_radar_core.py"
+      - "test_prime_source_bootstrap.py"
+      - ".github/workflows/prime-buyer-regression.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  buyer-unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Compile modified runtime
+        run: python -m py_compile main.py nc_v6_broad_radar.py northlab_lead_radar_core.py
+      - name: Unit and missed-lead regression suite
+        run: |
+          python -m unittest -q test_nc_v6_broad_radar.py test_northlab_lead_radar_core.py test_prime_source_bootstrap.py

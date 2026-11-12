@@ -37,6 +37,14 @@ for _module in (radar, radar.v53, radar.v53.v52, radar.v53.gate, v5):
 # Geography / source scope
 # ---------------------------------------------------------------------------
 
+# Project names can be the only North-Cyprus location in a buyer message.
+# Keep aliases specific; generic words such as "resort" are not enough.
+NC_PROJECT_RE = re.compile(
+    r"(?:\bcaesar\s+(?:resort|blue)\b|\bgrand\s+sapphire\b|"
+    r"\bцезарь\s+резорт\b|\bгранд\s+сапфир\w*\b)",
+    re.I,
+)
+
 NC_GEO_RE = re.compile(
     r"(?:"
     r"\bnorth(?:ern)?\s+cyprus\b|\btrnc\b|\bkktc\b|\bkuzey\s+k[ıi]br[ıi]s\b|"
@@ -232,7 +240,7 @@ POST_PURCHASE_OR_INFO_RE = re.compile(
 
 AGENT_OR_CLIENT_REP_RE = re.compile(
     r"(?:"
-    r"\bдля\s+(?:моего\s+)?клиент\w*\b|"
+    r"\bдля\s+(?:(?:моего|моих|двух|трёх|трех|[2-9])\s+)?клиент\w*\b|"
     r"\bищу\s+для\s+клиент\w*\b|"
     r"\bклиент\s+(?:ищет|хочет|готов\w*\s+купить)\b|"
     r"\bfor\s+(?:my|a|the)\s+client\b|"
@@ -256,7 +264,7 @@ AGENT_IDENTITY_RE = re.compile(
 )
 
 AGENT_CLIENT_RE = re.compile(
-    r"(?:\bдля\s+клиента\b|\bдля\s+моего\s+клиента\b|\bfor\s+(?:my|a|the|a\s+ready)\s+client\b|\bready\s+client\b|\bm[üu][şs]terim\s+i[çc]in\b)",
+    r"(?:\bдля\s+(?:(?:моего|моих|двух|трёх|трех|[2-9])\s+)?клиент\w*\b|\bfor\s+(?:my|a|the|a\s+ready)\s+client\b|\bready\s+client\b|\bm[üu][şs]terim\s+i[çc]in\b)",
     re.I,
 )
 
@@ -494,7 +502,11 @@ def _norm(text: str) -> str:
 
 
 def has_nc_geo(text: str) -> bool:
-    return bool(NC_GEO_RE.search(text or "") or NC_GEO_RU_RE.search(text or ""))
+    return bool(
+        NC_GEO_RE.search(text or "")
+        or NC_GEO_RU_RE.search(text or "")
+        or NC_PROJECT_RE.search(text or "")
+    )
 
 
 def detect_language(text: str) -> str:
@@ -598,6 +610,42 @@ def criteria(text: str) -> list[str]:
     return list(dict.fromkeys(out))
 
 
+AGENT_PURCHASE_RE = re.compile(
+    r"(?:"
+    r"\bклиент\w*\b.{0,90}\b(?:купить|покупк\w*|приобрест\w*)\b|"
+    r"\b(?:купить|покупк\w*|приобрест\w*)\b.{0,90}\bклиент\w*\b|"
+    r"\b(?:client|customer|buyer)s?\b.{0,90}\b(?:buy|purchas\w*)\b|"
+    r"\b(?:buy|purchas\w*)\b.{0,90}\b(?:client|customer|buyer)s?\b|"
+    r"\bm[üu][şs]ter\w*\b.{0,90}\b(?:sat[ıi]n\s+al\w*|almak)\b"
+    r")",
+    re.I | re.S,
+)
+
+
+READY_CLIENT_RE = re.compile(
+    r"(?:\bready\s+client\b|\bclient\s+is\s+ready\b|"
+    r"\bготов\w*\s+клиент\w*\b|\bhaz[ıi]r\s+m[üu][şs]teri\b)",
+    re.I,
+)
+
+
+def is_partner_purchase_request(text: str) -> bool:
+    """Allow only clearly purchase-side agency requests, never generic broker posts."""
+    if not (AGENT_OR_CLIENT_REP_RE.search(text) or AGENT_IDENTITY_RE.search(text) or AGENT_CLIENT_RE.search(text) or AGENT_PURCHASE_RE.search(text)):
+        return False
+    if not (PROPERTY_RE.search(text) or NC_PROJECT_RE.search(text)):
+        return False
+    if RENT_DEMAND_RE.search(text):
+        return False
+    explicit = bool(BUY_RE.search(text) or BUY_INTENT_VARIANTS_RE.search(text) or AGENT_PURCHASE_RE.search(text))
+    ready_with_purchase_budget = bool(
+        READY_CLIENT_RE.search(text)
+        and DEMAND_RE.search(text)
+        and has_purchase_sized_budget(text)
+    )
+    return explicit or ready_with_purchase_budget
+
+
 def _hard_reject(text: str, author: str = "") -> str:
     clean_author = str(author or "").strip().lstrip("@").casefold()
     if clean_author in BLOCKED_BUYER_AUTHORS:
@@ -616,9 +664,9 @@ def _hard_reject(text: str, author: str = "") -> str:
         return "financial_or_goods"
     if POST_PURCHASE_OR_INFO_RE.search(text):
         return "post_purchase_or_info"
-    if AGENT_OR_CLIENT_REP_RE.search(text):
+    if AGENT_OR_CLIENT_REP_RE.search(text) and not is_partner_purchase_request(text):
         return "agent_or_client_representative"
-    if AGENT_IDENTITY_RE.search(text) and not OWNER_NO_AGENT_RE.search(text):
+    if AGENT_IDENTITY_RE.search(text) and not OWNER_NO_AGENT_RE.search(text) and not is_partner_purchase_request(text):
         return "agent_or_client_representative"
     # "Owner direct / no agents" is still a real buyer signal. Do not throw
     # purchase demand away just because the person prefers the owner directly.
@@ -685,10 +733,10 @@ def classify_text(text: str, *, group: str = "", author: str = "", explicit_geo:
         return None, "south_only"
 
     explicit_geo = bool(explicit_geo)
-    buy = bool(BUY_RE.search(own) or BUY_INTENT_VARIANTS_RE.search(own))
+    buy = bool(BUY_RE.search(own) or BUY_INTENT_VARIANTS_RE.search(own) or AGENT_PURCHASE_RE.search(own))
     demand = bool(DEMAND_RE.search(own))
     implicit_layout_property = bool(explicit_geo and UNIT_LAYOUT_RE.search(own) and (buy or demand))
-    has_property = bool(PROPERTY_RE.search(own) or implicit_layout_property)
+    has_property = bool(PROPERTY_RE.search(own) or NC_PROJECT_RE.search(own) or implicit_layout_property)
     rent = bool(RENT_DEMAND_RE.search(own))
     # Prime Kibris buyer radar is purchase-only. Rental demand must never be
     # stored, recovered or notified, regardless of environment flags.
@@ -839,6 +887,8 @@ def classify_text(text: str, *, group: str = "", author: str = "", explicit_geo:
         reasons.append("residency_signal")
     if (OWNER_DIRECT_PREFERENCE_RE.search(own) or OWNER_NO_AGENT_RE.search(own)) and has_property and (buy or demand):
         reasons.append("owner_direct_buyer_preference")
+    if is_partner_purchase_request(own) and intent_type == "BUYER":
+        reasons.append("agent_client_purchase_request")
     if extract_budget(own):
         reasons.append("budget_present")
     if extract_region(own):
@@ -860,7 +910,9 @@ def classify_text(text: str, *, group: str = "", author: str = "", explicit_geo:
 def candidate_signal(text: str) -> bool:
     return bool(
         PROPERTY_RE.search(text or "")
+        or NC_PROJECT_RE.search(text or "")
         or BUY_RE.search(text or "")
+        or AGENT_PURCHASE_RE.search(text or "")
         or BUY_INTENT_VARIANTS_RE.search(text or "")
         or RENT_DEMAND_RE.search(text or "")
         or RELOCATION_RE.search(text or "")
@@ -1306,6 +1358,7 @@ TELEGRAM_BOOTSTRAP_DISCUSSION_SEEDS = (
     "cyprusforum",
     "northern_cyprus_forum",
     "NCyprus_Iskele",
+    "sharabara2026",  # Public lead source; preview only, never auto-join
 )
 
 # Group discovery terms are intentionally multilingual. We search Telegram's
@@ -3057,7 +3110,7 @@ def notify_lead(lead: dict[str, Any], prefix: str = "NEW") -> bool:
         return False
     if _hard_reject(message_text, str(lead.get("author") or "")):
         return False
-    if not PROPERTY_RE.search(message_text):
+    if not (PROPERTY_RE.search(message_text) or NC_PROJECT_RE.search(message_text)):
         return False
     if "implicit_property_demand" in reasons and not DEMAND_RE.search(message_text):
         return False
@@ -3123,7 +3176,10 @@ def notify_lead(lead: dict[str, Any], prefix: str = "NEW") -> bool:
         f"{_clip(lead.get('message') or lead.get('text') or '', 900)}\n\n"
         f"🔗 {lead.get('url','') or 'Doğrudan link yok'}"
     )
-    core.telegram(msg[:3900])
+    delivered = core.telegram(msg[:3900])
+    if delivered is not True:
+        print("BUYER_NOTIFY_DELIVERY_FAILED", {"url": str(lead.get("url") or "")[:220]})
+        return False
     return True
 
 

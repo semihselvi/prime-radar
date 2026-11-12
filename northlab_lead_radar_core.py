@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import nc_v6_broad_radar as radar
@@ -31,7 +31,7 @@ def is_actionable_buyer(lead: dict[str, Any]) -> bool:
         return False
     if radar._hard_reject(text, str(lead.get("author") or "")):
         return False
-    if not radar.PROPERTY_RE.search(text):
+    if not (radar.PROPERTY_RE.search(text) or radar.NC_PROJECT_RE.search(text)):
         return False
 
     reasons = {str(x) for x in (lead.get("lead_reasons") or [])}
@@ -51,6 +51,53 @@ def is_actionable_buyer(lead: dict[str, Any]) -> bool:
         return True
 
     return False
+
+
+def recover_recent_unnotified(db, now: datetime, max_send: int = 3) -> dict[str, int]:
+    """Bounded 14-day replay of accepted but never notified Telegram leads.
+
+    Already-notified rows are never resent. Reclassify against current rules
+    rather than relying on stale labels. This does NOT scrape old rejected posts.
+    """
+    stats = {"scanned": 0, "eligible": 0, "notified": 0, "errors": 0}
+    if max_send <= 0:
+        return stats
+    cutoff = (now - timedelta(days=14)).isoformat()
+    try:
+        rows = (
+            db.collection(radar.core.COLLECTION)
+            .where("message_time", ">=", cutoff)
+            .limit(180)
+            .stream()
+        )
+        for snap in rows:
+            stats["scanned"] += 1
+            if stats["notified"] >= max_send:
+                break
+            lead = snap.to_dict() or {}
+            if str(lead.get("platform") or lead.get("source") or "").casefold() != "telegram":
+                continue
+            if any(lead.get(k) for k in ("v5_notified_at", "v6_notified_at", "core_notified_at")):
+                continue
+            message = str(lead.get("message") or lead.get("text") or "")
+            signal, _reason = radar.classify_text(
+                message,
+                group=str(lead.get("group") or ""),
+                author=str(lead.get("author") or ""),
+            )
+            if signal is None:
+                continue
+            candidate = {**lead, **signal, "lead_id": snap.id}
+            if not is_actionable_buyer(candidate):
+                continue
+            stats["eligible"] += 1
+            if radar.notify_lead(candidate, "RECOVERED"):
+                _mark_notified(db, candidate, now)
+                stats["notified"] += 1
+    except Exception as exc:
+        stats["errors"] += 1
+        print("PRIME_BUYER_RECOVERY_ERROR", type(exc).__name__, str(exc)[:300])
+    return stats
 
 
 def _mark_notified(db, lead: dict[str, Any], when: datetime) -> None:
@@ -81,6 +128,8 @@ async def scan_once() -> dict[str, Any]:
     db = radar.core.db()
 
     result = await radar.broad_telegram_scan(db, started)
+    if str(result.get("status") or "").startswith("skipped"):
+        raise RuntimeError("PRIME_BUYER_TELEGRAM_SCAN_UNAVAILABLE: " + str(result.get("status")))
     raw = list(result.get("new_leads") or [])
     buyers = [lead for lead in raw if is_actionable_buyer(lead)]
 
@@ -90,7 +139,9 @@ async def scan_once() -> dict[str, Any]:
             _mark_notified(db, lead, started)
             notified += 1
 
+    recovery = recover_recent_unnotified(db, started)
     summary = {
+        "recovery": recovery,
         "version": VERSION,
         "status": result.get("status", "unknown"),
         "groups": result.get("groups", 0),
