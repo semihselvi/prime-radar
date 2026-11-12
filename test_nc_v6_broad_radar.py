@@ -1246,5 +1246,104 @@ class PrimeProjectAliasTests(unittest.TestCase):
             )
 
 
+class FourLanguageBuyerExpansionTests(unittest.TestCase):
+    """DE/PL/NL/IT must work from a standalone message and from local groups."""
+
+    def test_explicit_purchase_in_four_languages_without_group_context(self):
+        samples = (
+            ("Ich möchte eine Wohnung auf Nordzypern kaufen.", "DE"),
+            ("Szukam mieszkania do kupienia na Cyprze Północnym.", "PL"),
+            ("Ik wil een appartement op Noord-Cyprus kopen.", "NL"),
+            ("Vorrei comprare un appartamento a Cipro del Nord.", "IT"),
+        )
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            for text, expected_lang in samples:
+                with self.subTest(language=expected_lang):
+                    self.assertTrue(v6.has_nc_geo(text), text)
+                    self.assertTrue(v6.candidate_signal(text), text)
+                    self.assertTrue(v6.global_public_candidate_signal(text), text)
+                    signal, reason = v6.classify_text(text, group="")
+                    self.assertIsNotNone(signal, (text, reason))
+                    self.assertEqual(signal["language"], expected_lang)
+                    self.assertEqual(signal["intent_type"], "BUYER")
+                    self.assertIn("explicit_purchase_intent", signal["lead_reasons"])
+
+    def test_colloquial_buyer_variations(self):
+        samples = (
+            ("Suche eine Wohnung auf Nordzypern zum Kaufen.", "DE"),
+            ("Chcę kupić mieszkanie na Cyprze Północnym.", "PL"),
+            ("Ik zoek een woning om te kopen in İskele.", "NL"),
+            ("Cerco un appartamento da acquistare a Cipro Nord.", "IT"),
+        )
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            for text, lang in samples:
+                with self.subTest(text=text):
+                    signal, reason = v6.classify_text(text, group="")
+                    self.assertIsNotNone(signal, (text, reason))
+                    self.assertEqual(signal["intent_type"], "BUYER")
+                    self.assertEqual(signal["language"], lang)
+
+    def test_renters_in_four_languages_never_become_buyer(self):
+        messages = (
+            "Suche Wohnung auf Nordzypern zur Miete.",
+            "Szukam mieszkania do wynajęcia na Cyprze Północnym.",
+            "Ik zoek een appartement te huur op Noord-Cyprus.",
+            "Cerco un appartamento in affitto a Cipro del Nord.",
+        )
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            for msg in messages:
+                with self.subTest(text=msg):
+                    self.assertTrue(v6.RENT_DEMAND_RE.search(msg), msg)
+                    lead, reason = v6.classify_text(msg, group="")
+                    self.assertIsNone(lead)
+                    self.assertEqual(reason, "rental_hard_excluded")
+
+    def test_foreign_geography_and_goods_rejected(self):
+        messages = (
+            "Vorrei comprare un appartamento a Limassol.",
+            "Ik wil een appartement in Amsterdam kopen.",
+            "Ik wil een fiets kopen op Noord Cyprus.",
+            "Vorrei comprare una macchina a Cipro del Nord.",
+        )
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            for msg in messages:
+                with self.subTest(text=msg):
+                    lead, reason = v6.classify_text(msg, group="")
+                    self.assertIsNone(lead, (msg, reason))
+
+    def test_geography_is_proven_by_relevant_public_group(self):
+        samples = (
+            ("Ich möchte eine Wohnung kaufen.", "Nordzypern Immobilien", "DE"),
+            ("Chcę kupić mieszkanie.", "Cypr Północny nieruchomości", "PL"),
+            ("Ik wil een appartement kopen.", "Nederlanders Noord Cyprus", "NL"),
+            ("Vorrei comprare una casa.", "Italiani Cipro del Nord", "IT"),
+        )
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            for text, group, language in samples:
+                with self.subTest(group=group):
+                    signal, reason = v6.classify_text(text, group=group)
+                    self.assertIsNotNone(signal, (text, group, reason))
+                    self.assertEqual(signal["language"], language)
+                    self.assertEqual(signal["intent_type"], "BUYER")
+
+    def test_german_polish_dutch_italian_searches_are_discoverable(self):
+        queries = " | ".join(v6.TELEGRAM_GLOBAL_BUYER_QUERIES)
+        peers = " | ".join(v6.TELEGRAM_PUBLIC_PEER_QUERIES)
+        for phrase in (
+            "Kaufgesuch Nordzypern",
+            "chcę kupić dom Cypr Północny",
+            "woning kopen Noord Cyprus",
+            "cerco appartamento Cipro del Nord",
+        ):
+            self.assertIn(phrase, queries)
+        for phrase in (
+            "Nordzypern Deutsche",
+            "Polacy na Cyprze",
+            "Nederlanders Noord Cyprus",
+            "Italiani Cipro del Nord",
+        ):
+            self.assertIn(phrase, peers)
+
+
 if __name__ == "__main__":
     unittest.main()
