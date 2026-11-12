@@ -1482,6 +1482,10 @@ TELEGRAM_VETTED_PUBLIC_GROUPS = (
 # Public discussion communities with observed buyer/tenant questions.
 # Probe their public preview without automatically joining any group.
 # This avoids the source-discovery deadlock when no existing seed produced a buyer.
+# These are previously observed Northern-Cyprus discussion groups. Their
+# usernames can supply geography without treating unrelated groups as local.
+VERIFIED_NORTH_PUBLIC_CHAT_USERNAMES = frozenset({"cyprusprop", "sharabara2026"})
+
 TELEGRAM_BOOTSTRAP_DISCUSSION_SEEDS = (
     "cyprusforum",
     "northern_cyprus_forum",
@@ -1645,6 +1649,8 @@ def _public_chat_has_north_context(chat: Any, username: str = "") -> bool:
     title = str(getattr(chat, "title", "") or "")
     user = str(username or getattr(chat, "username", "") or "")
     context = f"{title} {user.replace('_', ' ')}"
+    if user.lstrip("@").casefold() in VERIFIED_NORTH_PUBLIC_CHAT_USERNAMES:
+        return True
     return bool(DIRECT_NORTH_GROUP_RE.search(context) or NC_GEO_RE.search(context) or NC_GEO_RU_RE.search(context))
 
 
@@ -2601,6 +2607,7 @@ async def broad_telegram_scan(db_client, started):
             seed_direct_north = bool(
                 DIRECT_NORTH_GROUP_RE.search(seed_title)
                 or DIRECT_NORTH_GROUP_RE.search(seed)
+                or seed.casefold() in VERIFIED_NORTH_PUBLIC_CHAT_USERNAMES
             )
 
             # Proven buyer-producing channels are also monitored directly via
