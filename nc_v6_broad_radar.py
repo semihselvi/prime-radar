@@ -90,7 +90,11 @@ NC_GEO_RE = re.compile(
     r"\bercan\b|\bnicosia\s+north\b|\blefko[şs]a\b|\b[öo]t[üu]ken\b|\bkarakol\b|\bsalamis\b|\bmutluyaka\b|\bge[çc]itkale\b|\b[çc]atalk[öo]y\b|\bozank[öo]y\b|\bkarao[ğg]lano[ğg]lu\b|"
     r"\bискел\w*\b|\bлонг\s+бич\b|\bфамагуст\w*\b|\bгирн\w*\b|"
     r"\bалсанджак\b|\bлапт\w*\b|\bэсентеп\w*\b|\bтатлысу\b|\bбафр\w*\b|"
-    r"\bбоаз\w*\b|\bлефк\w*\b|\bгюзельюрт\b"
+    r"\bбоаз\w*\b|\bлефк\w*\b|\bгюзельюрт\b|"
+    r"\bnord[\s-]?zypern\b|"
+    r"\bcypr\w*\s+p[oó][łl]nocn\w*\b|\bp[oó][łl]nocn\w*\s+cypr\w*\b|"
+    r"\bnoord(?:elijk)?[\s-]*cyprus\b|"
+    r"\bcipro\s+(?:del\s+)?nord\b|\bcipro\s+settentrional\w*\b"
     r")",
     re.I,
 )
@@ -108,7 +112,8 @@ DIRECT_NORTH_GROUP_RE = re.compile(
     r"северн\w*\s+кипр|iskele|i̇skele|trikomo|long\s*beach|girne|kyrenia|"
     r"famagust|gazima[ğg]usa|ma[ğg]usa|alsancak|lapta|esentepe|tatl[ıi]su|"
     r"bafra|yenibo[ğg]azi[çc]i|bo[ğg]az|lefke|g[üu]zelyurt|"
-    r"nordzypern|cypr\s+p[oó]łnocn\w*|cypr\s+polnocn\w*)",
+    r"nord[\s-]?zypern|cypr\w*\s+p[oó][łl]nocn\w*|p[oó][łl]nocn\w*\s+cypr\w*|"
+    r"noord(?:elijk)?[\s-]*cyprus|cipro\s+(?:del\s+)?nord|cipro\s+settentrional\w*)",
     re.I,
 )
 
@@ -135,7 +140,9 @@ PROPERTY_RE = re.compile(
     r"\bmieszkan\w*\b|\bnieruchomo[śs]c\w*\b|\bdom\w*\b|\bdzia[łl]k\w*\b|"
     r"\bквартир\w*\b|\bапартамент\w*\b|\bвилл\w*\b|\bдом\w*\b|\bтаунхаус\w*\b|\bпентхаус\w*\b|\bбунгало\w*\b|\bстуди\w*\b|\bнедвижимост\w*\b|\bземл\w*\b|"
     r"\b[0-6]\s*\+\s*[0-3]\b|\b(?:one|two|three|1|2|3)\s+bed(?:room)?s?\b|"
-    r"\b(?:bir|iki|üç|uc|1|2|3)\s+yatak\s+odal[ıi]\b"
+    r"\b(?:bir|iki|üç|uc|1|2|3)\s+yatak\s+odal[ıi]\b|"
+    r"\b(?:woning|woningen|appartement(?:en)?|vastgoed|koopwoning|koopappartement)\b|"
+    r"\b(?:appartament\w*|immobil\w*|casa|case|terren\w*|villett\w*)\b"
     r")",
     re.I,
 )
@@ -150,7 +157,15 @@ BUY_RE = re.compile(
     r"\bхочу\s+купить\b|\bкуплю\b|\bпланир\w*\s+купить\b|\bстоит\s+ли\s+покупать\b|\bгде\s+(?:лучше\s+)?купить\b|"
     r"\bчто\s+можно\s+купить\b|\bищу\s+на\s+покупку\b|"
     r"\b(?:ich|wir)\s+(?:möchte|moechte|wollen|will)\s+.*\bkaufen\b|\bsuche\s+.*\bzum\s+kauf\b|\bwohnung\s+kaufen\b|\bimmobilie\s+kaufen\b|"
-    r"\bchc[ęe]\s+kupi[ćc]\b|\bszukam\s+.*\bdo\s+kupna\b|\bkupi[ęe]\b|\bmieszkanie\s+na\s+sprzeda[żz]\b"
+    r"\bchc[ęe]\s+kupi[ćc]\b|\bszukam\s+.*\bdo\s+kupna\b|\bkupi[ęe]\b|\bmieszkanie\s+na\s+sprzeda[żz]\b|"
+    r"\b(?:szukam|poszukuj[ęe])\b.{0,110}\bdo\s+kupienia\b|"
+    r"\b(?:suche|suchen)\b.{0,110}\bzum\s+kaufen\b|"
+    r"\b(?:ik\s+(?:wil|zou\s+graag)|wij\s+willen)\b.{0,110}\b(?:kopen|aanschaffen)\b|"
+    r"\b(?:ik\s+ben\s+)?op\s+zoek\s+naar\b.{0,110}\bom\s+te\s+kopen\b|"
+    r"\b(?:ik\s+)?zoek\b.{0,110}\bom\s+te\s+kopen\b|"
+    r"\b(?:voglio|vorrei|vogliamo|desidero)\s+(?:comprare|acquistare)\b|"
+    r"\b(?:cerco|cerchiamo|sto\s+cercando)\b.{0,110}\bda\s+(?:comprare|acquistare)\b|"
+    r"\bcompro\s+(?:un[ao]?\s+)?(?:appartament\w*|casa|immobil\w*|villa|terren\w*)\b"
     r")",
     re.I | re.S,
 )
@@ -175,7 +190,8 @@ BUY_INTENT_VARIANTS_RE = re.compile(
 PURCHASE_MARKET_RE = re.compile(
     r"\b(?:ko[çc]an\w*|tapu|title\s+deed|eigentumstitel|grundbuch|"
     r"akt\s+w[łl]asno[śs]ci|ksi[ęe]ga\s+wieczysta|титул\w*|"
-    r"вторичк\w*|вторичн\w*\s+рынк\w*|resale|ikinci\s+el|2[.]?\s*el|sat[ıi]l[ıi]k|taksitl\w*|рассрочк\w*|payment\s+plan)\b", re.I,
+    r"вторичк\w*|вторичн\w*\s+рынк\w*|resale|ikinci\s+el|2[.]?\s*el|sat[ıi]l[ıi]k|taksitl\w*|рассрочк\w*|payment\s+plan|"
+    r"koopwoning|koopappartement|eigendomsakte|atto\s+di\s+propriet[aà])\b", re.I,
 )
 
 DEMAND_RE = re.compile(
@@ -184,7 +200,9 @@ DEMAND_RE = re.compile(
     r"\bar[ıi]yorum\b|\bbak[ıi]yorum\b|\bariyorum\b|\bbakiyorum\b|\bde[ğg]erlendiriyorum\b|\bd[üu][şs][üu]n[üu]yorum\b|\bilgilenmek\s+istiyorum\b|"
     r"\bищу\b|\bищем\b|\bнужн(?:а|ы|о)\b|\bподбира\w*\b|\bрассматрива\w*\b|\bинтересует\b|\bприсматрива\w*\b|\bхотел(?:а|и)?\s+бы\b|"
     r"\bsuche\b|\bwir\s+suchen\b|\bgesucht\b|"
-    r"\bszukam\b|\bszukamy\b|\bposzukuj[ęe]\b"
+    r"\bszukam\b|\bszukamy\b|\bposzukuj[ęe]\b|"
+    r"\b(?:ik\s+zoek|wij\s+zoeken|op\s+zoek\s+naar|gezocht)\b|"
+    r"\b(?:cerco|cerchiamo|sto\s+cercando|sono\s+interessat[oa]\s+a)\b"
     r")",
     re.I,
 )
@@ -200,7 +218,13 @@ RENT_DEMAND_RE = re.compile(
     r"\bищу\s+(?:квартир\w*|дом\w*|вилл\w*|студи\w*)\b.{0,180}\b(?:на\s+месяц|на\s+год|на\s+долгий\s+срок|долгосроч\w*|долгосрок\w*|аренд\w*|сдавать\w*)\b|"
     r"\bищу\b.{0,120}\b(?:квартир\w*|дом\w*|вилл\w*|студи\w*)\b.{0,120}\b(?:с\s+\d|по\s+\d|на\s+\d+\s+(?:дн|день|дней|недел|месяц))\b|"
     r"\bищу\b.{0,180}\bна\s+(?:пол(?:-|\s+)года|(?:\d+|три|шесть|два)\s+месяц\w*)\b|"
-    r"\bищу\b.{0,180}\b(?:не\s+курю|без\s+(?:животн\w*|питомц\w*))\b"
+    r"\bищу\b.{0,180}\b(?:не\s+курю|без\s+(?:животн\w*|питомц\w*))\b|"
+    r"\b(?:ik\s+zoek|wij\s+zoeken|op\s+zoek\s+naar)\b.{0,110}\b(?:te\s+huur|huurwoning|huren)\b|"
+    r"\b(?:ik\s+wil|wij\s+willen)\b.{0,90}\bhuren\b|"
+    r"\b(?:cerco|cerchiamo|sto\s+cercando)\b.{0,120}\b(?:in\s+affitto|da\s+affittare|affitt\w*)\b|"
+    r"\b(?:voglio|vorrei)\s+affittare\b|"
+    r"\b(?:suche|suchen)\b.{0,90}\b(?:zur\s+miete|mieten)\b|"
+    r"\b(?:szukam|poszukuj[ęe])\b.{0,90}\b(?:do\s+wynaj[ęe]cia|wynajem)\b"
     r")",
     re.I | re.S,
 )
@@ -548,16 +572,35 @@ def detect_language(text: str) -> str:
     if re.search(r"[а-яё]", value, re.I):
         return "RU"
     low = value.casefold()
-    if re.search(r"[çğıöşüİı]", value) or any(x in low for x in (" arıyorum", " bakıyorum", " taşın", " yatırım", " daire", " kiralık", " oturma izni")):
-        return "TR"
-    if re.search(r"[ąćęłńóśźż]", low) or any(x in low for x in ("szukam", "szukamy", "chcę kupić", "kupie ", "kupię ", "mieszkanie", "nieruchomość", "nieruchomosci")):
+    # Match specific language grammar BEFORE broad diacritic detection.
+    # German "möchte" has ö; location names such as "İskele" have İ.
+    # Neither proves the surrounding buyer message is Turkish.
+    if re.search(r"[ąćęłńóśźż]", low) or any(x in low for x in (
+        "szukam", "szukamy", "chcę kupić", "kupie ", "kupię ",
+        "mieszkanie", "nieruchomość", "nieruchomosci",
+    )):
         return "PL"
-    if re.search(r"[äöüß]", low) or any(x in low for x in ("wohnung", "immobilie", "ich suche", "wir suchen", "kaufen", "grundbuch", "eigentumstitel")):
+    if re.search(
+        r"\b(?:noord(?:elijk)?[ -]?cyprus|woning|woningen|vastgoed|"
+        r"huurwoning|kopen|huren|ik\s+zoek|wij\s+zoeken|ik\s+wil|"
+        r"op\s+zoek\s+naar)\b", low
+    ):
+        return "NL"
+    if re.search(
+        r"\b(?:cipro\s+(?:del\s+)?nord|appartament\w*|acquist\w*|"
+        r"comprare|cerco|cerchiamo|vorrei|voglio|affitto|immobil\w*)\b", low
+    ):
+        return "IT"
+    if re.search(r"\b(?:wohnung\w*|immobilie\w*|ich\s+suche|wir\s+suchen|kaufen|grundbuch|eigentumstitel|nord[ -]?zypern)\b", low) or (
+        re.search(r"[äöüß]", low)
+        and re.search(r"\b(?:ich|wir|suche|suchen|haus|wohnung)\b", low)
+    ):
         return "DE"
+    if re.search(r"\b(?:sat[ıi]n\s+al|ar[ıi]yorum|bak[ıi]yorum|daire|yat[ıi]r[ıi]m|ta[şs][ıi]n)\w*\b", low) or re.search(r"[çğıöşüİı]", value):
+        return "TR"
     if re.search(r"[a-z]", value, re.I):
         return "EN"
     return "OTHER"
-
 
 def extract_region(text: str) -> str:
     mapping = [
@@ -1220,6 +1263,8 @@ TELEGRAM_GLOBAL_BUYER_QUERIES = (
     "Immobilie mit Eigentumstitel",
     "Wohnung mit Grundbuch",
     "Immobilie Ratenzahlung Nordzypern",
+    "suche Haus Nordzypern",
+    "Kaufgesuch Nordzypern",
     # Polish.
     "kupię mieszkanie Cypr Północny",
     "chcę kupić mieszkanie Cypr Północny",
@@ -1231,6 +1276,18 @@ TELEGRAM_GLOBAL_BUYER_QUERIES = (
     "mieszkanie z aktem własności",
     "nieruchomość księga wieczysta",
     "mieszkanie na raty Cypr Północny",
+    "szukam domu Cypr Północny",
+    "chcę kupić dom Cypr Północny",
+    # Dutch / Flemish. Search both local and diaspora vocabulary.
+    "woning kopen Noord Cyprus",
+    "appartement kopen Noord-Cyprus",
+    "ik zoek appartement Noord Cyprus",
+    "vastgoed Noord Cyprus",
+    # Italian.
+    "comprare casa Cipro del Nord",
+    "cerco appartamento Cipro del Nord",
+    "acquistare immobile Cipro Nord",
+    "appartamento Cipro del Nord",
     # Turkish.
     "daire almak istiyorum",
     "ev almak istiyorum",
@@ -1395,6 +1452,14 @@ TELEGRAM_PUBLIC_PEER_QUERIES = (
     "Polacy Cypr Północny",
     "Cypr Północny nieruchomości",
     "Cypr Polnocny nieruchomosci",
+    # Dutch/Flemish and Italian North Cyprus communities.
+    "Noord Cyprus",
+    "Noord-Cyprus",
+    "Nederlanders Noord Cyprus",
+    "Belgen Noord Cyprus",
+    "Cipro del Nord",
+    "Cipro Nord",
+    "Italiani Cipro del Nord",
 )
 
 # Public discussion groups already verified outside Telegram search. Keep this
