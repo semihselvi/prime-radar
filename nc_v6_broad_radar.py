@@ -622,6 +622,13 @@ AGENT_PURCHASE_RE = re.compile(
 )
 
 
+READY_CLIENT_RE = re.compile(
+    r"(?:\bready\s+client\b|\bclient\s+is\s+ready\b|"
+    r"\bготов\w*\s+клиент\w*\b|\bhaz[ıi]r\s+m[üu][şs]teri\b)",
+    re.I,
+)
+
+
 def is_partner_purchase_request(text: str) -> bool:
     """Allow only clearly purchase-side agency requests, never generic broker posts."""
     if not (AGENT_OR_CLIENT_REP_RE.search(text) or AGENT_IDENTITY_RE.search(text) or AGENT_CLIENT_RE.search(text) or AGENT_PURCHASE_RE.search(text)):
@@ -630,7 +637,13 @@ def is_partner_purchase_request(text: str) -> bool:
         return False
     if RENT_DEMAND_RE.search(text):
         return False
-    return bool(BUY_RE.search(text) or BUY_INTENT_VARIANTS_RE.search(text) or AGENT_PURCHASE_RE.search(text))
+    explicit = bool(BUY_RE.search(text) or BUY_INTENT_VARIANTS_RE.search(text) or AGENT_PURCHASE_RE.search(text))
+    ready_with_purchase_budget = bool(
+        READY_CLIENT_RE.search(text)
+        and DEMAND_RE.search(text)
+        and has_purchase_sized_budget(text)
+    )
+    return explicit or ready_with_purchase_budget
 
 
 def _hard_reject(text: str, author: str = "") -> str:
