@@ -1345,5 +1345,68 @@ class FourLanguageBuyerExpansionTests(unittest.TestCase):
             self.assertIn(phrase, peers)
 
 
+class NovemberBuyerSourceRegressionTests(unittest.TestCase):
+    """Realistic recent buyer requests: original posts must not be confused with sellers."""
+
+    def test_cyprusprop_watched_without_auto_join(self):
+        self.assertIn("cyprusprop", v6.TELEGRAM_BOOTSTRAP_DISCUSSION_SEEDS)
+        self.assertNotIn("cyprusprop", v6.TELEGRAM_VETTED_PUBLIC_GROUPS)
+        self.assertIn("cyprusprop", v6.TELEGRAM_PUBLIC_PEER_QUERIES)
+
+    def test_four_seasons_life_loft_purchase(self):
+        msg = (
+            "Куплю квартиру 1+1 Loft в комплексе Four Seasons Life, "
+            "1-я очередь. Предложения прошу отправлять в личные сообщения."
+        )
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            signal, reason = v6.classify_text(msg, group="СЕВЕРНЫЙ КИПР | НЕДВИЖИМОСТЬ")
+        self.assertIsNotNone(signal, reason)
+        self.assertEqual(signal["intent_type"], "BUYER")
+        self.assertEqual(signal["estimated_project"], "Four Seasons Life")
+        self.assertTrue(v6.global_public_candidate_signal(msg, has_north_context=True))
+
+    def test_royal_sun_residence_agent_purchase(self):
+        msg = "Ищу для клиента. 3+1 Роял Сан Резиденс. ПОКУПКА."
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            signal, reason = v6.classify_text(msg, group="СЕВЕРНЫЙ КИПР | НЕДВИЖИМОСТЬ")
+        self.assertIsNotNone(signal, reason)
+        self.assertEqual(signal["intent_type"], "BUYER")
+        self.assertEqual(signal["estimated_project"], "Royal Sun Residence")
+        self.assertIn("agent_client_purchase_request", signal["lead_reasons"])
+        self.assertTrue(v6.global_public_candidate_signal(msg, has_north_context=True))
+
+    def test_specific_project_aliases_do_not_override_existing(self):
+        self.assertEqual(v6.extract_project("Royal Sun Elite"), "Royal Sun Elite")
+        self.assertEqual(v6.extract_project("Royal Sun Residence"), "Royal Sun Residence")
+        self.assertEqual(v6.extract_project("Royal Sun"), "Royal Sun")
+        self.assertEqual(v6.extract_project("Four Seasons Life"), "Four Seasons Life")
+        self.assertEqual(v6.extract_project("Four Seasons"), "Four Seasons")
+
+    def test_ambiguous_monthly_owner_request_is_not_notified_as_buyer(self):
+        msg = "Ищу 2+1 в искеле от собственника с помесячной оплатой"
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            signal, reason = v6.classify_text(msg, group="СЕВЕРНЫЙ КИПР | НЕДВИЖИМОСТЬ")
+        # Could be rental or purchase with installments. An unverified demand
+        # cannot become a confirmed sales alert solely on this wording.
+        if signal is not None:
+            lead = dict(signal, market="north_cyprus", message=msg)
+            with patch.object(v6.core, "telegram") as send:
+                self.assertFalse(v6.notify_lead(lead))
+                send.assert_not_called()
+
+    def test_seller_and_renter_not_flagged_as_project_buyers(self):
+        examples = (
+            "Продам квартиру 1+1 в Four Seasons Life. Цена £130000.",
+            "Ищу квартиру 1+1 в аренду в Royal Sun Residence.",
+        )
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            for msg in examples:
+                with self.subTest(msg=msg):
+                    lead, reason = v6.classify_text(
+                        msg, group="СЕВЕРНЫЙ КИПР | НЕДВИЖИМОСТЬ"
+                    )
+                    self.assertIsNone(lead, reason)
+
+
 if __name__ == "__main__":
     unittest.main()
