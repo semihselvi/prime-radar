@@ -532,6 +532,119 @@ def discover_direct_rows() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     return rows, debug
 
 
+
+# Aggregator monitoring: only individual, same-origin listing URLs are eligible.
+# Home-page summaries intermix different authors, dates, rentals and sales,
+# so the index page must never itself be classified as a buyer message.
+PULSEMARKET_HOME = "https://web.pulsemarket.eu/"
+PULSEMARKET_HOST = "web.pulsemarket.eu"
+PULSEMARKET_HEADLINE_RE = re.compile(
+    r"(?:\bкуплю\b|\bхочу\s+купить\b|\bищу\b|\bищем\b|"
+    r"\blooking\s+to\s+buy\b|\blooking\s+for\b|\bwant\s+to\s+buy\b|"
+    r"\bdaire\s+ar[ıi]yorum\b)",
+    re.I,
+)
+
+
+def pulsemarket_detail_url(base: str, href: str) -> str:
+    """Never follow outbound contacts or the mixed-content index as a lead."""
+    clean = str(href or "").strip()
+    if not clean or clean.startswith(("#", "javascript:", "mailto:", "tel:")):
+        return ""
+    parsed = urllib.parse.urlparse(urllib.parse.urljoin(base, clean))
+    if parsed.scheme != "https" or parsed.hostname != PULSEMARKET_HOST:
+        return ""
+    if parsed.path.rstrip("/") in {"", "/"}:
+        return ""
+    if parsed.path.startswith(("/blog/", "/privacy", "/terms", "/contact", "/about")):
+        return ""
+    return parsed._replace(fragment="", query="").geturl()
+
+
+def extract_pulsemarket_card_rows(html: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Extract linked buyer cards only; never parse a whole marketplace homepage."""
+    soup = BeautifulSoup(str(html or ""), "html.parser")
+    rows: list[dict[str, Any]] = []
+    stats = {"buyer_headlines": 0, "unlinked_buyer_cards": 0, "linked_buyer_cards": 0}
+    seen: set[str] = set()
+    for heading in soup.select("h2, h3, h4"):
+        title = _norm(heading.get_text(" ", strip=True))
+        if not PULSEMARKET_HEADLINE_RE.search(title):
+            continue
+        if v6.RENT_DEMAND_RE.search(title) or v6.SELLER_DIRECTION_RE.search(title):
+            continue
+        stats["buyer_headlines"] += 1
+        # Link must actually enclose/appear inside THIS heading. Do not borrow
+        # a random link from a surrounding card containing other listings.
+        link = heading.find("a", href=True) or heading.find_parent("a", href=True)
+        url = pulsemarket_detail_url(PULSEMARKET_HOME, link.get("href", "") if link else "")
+        if not url:
+            stats["unlinked_buyer_cards"] += 1
+            continue
+        if url in seen:
+            continue
+        seen.add(url)
+        stats["linked_buyer_cards"] += 1
+        rows.append({
+            "source": "PulseMarket",
+            "url": url,
+            "title": title,
+            "snippet": title,
+            "rss_published": "",
+            "discovery": "pulsemarket_linked_buyer_card",
+            "implicit_nc": False,
+        })
+        if len(rows) >= 12:
+            break
+    return rows, stats
+
+
+def discover_pulsemarket_rows() -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Bounded public homepage and site-search; detail date required before alert."""
+    rows: list[dict[str, Any]] = []
+    debug: dict[str, Any] = {}
+    try:
+        response = requests.get(
+            PULSEMARKET_HOME,
+            headers={"User-Agent": "Mozilla/5.0 (compatible; PrimeKibrisLeadRadar/1.1)"},
+            timeout=min(TIMEOUT, 12),
+        )
+        response.raise_for_status()
+        rows, counts = extract_pulsemarket_card_rows(response.text)
+        debug.update(counts)
+    except Exception as exc:
+        debug["homepage_error"] = f"{type(exc).__name__}:{str(exc)[:160]}"
+    # Search-index discovery is auxiliary; it never establishes a reliable
+    # listing publication date, sender or purchase intent by itself.
+    for query in (
+        'site:web.pulsemarket.eu/ "куплю квартиру"',
+        'site:web.pulsemarket.eu/ "ищу для клиента" квартира',
+    ):
+        try:
+            matches = bing_rss(query)
+        except Exception as exc:
+            debug["search_error"] = f"{type(exc).__name__}:{str(exc)[:160]}"
+            continue
+        for hit in matches[:5]:
+            url = pulsemarket_detail_url(PULSEMARKET_HOME, str(hit.get("url") or ""))
+            if not url or any(row["url"] == url for row in rows):
+                continue
+            rows.append({
+                "source": "PulseMarket",
+                "url": url,
+                "title": str(hit.get("title") or ""),
+                "snippet": str(hit.get("snippet") or ""),
+                "rss_published": "",
+                "discovery": "pulsemarket_site_search",
+                "implicit_nc": False,
+            })
+            if len(rows) >= 12:
+                break
+        if len(rows) >= 12:
+            break
+    debug["candidate_detail_urls"] = len(rows)
+    return rows[:12], debug
+
 def discover_source_rows() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     debug: dict[str, Any] = {}
@@ -675,12 +788,14 @@ def run() -> None:
     else:
         forum_rows, forum_debug = discover_forumscraper_rows()
         direct_rows, direct_debug = discover_direct_rows()
+        pulse_rows, pulse_debug = discover_pulsemarket_rows()
         discovery_rows, discovery_debug = discover_source_rows()
         # Productive/direct sources must consume the fetch budget before broad crawling.
-        discovery_rows = direct_rows + forum_rows + discovery_rows
+        discovery_rows = pulse_rows + direct_rows + forum_rows + discovery_rows
     discovery_debug = {
         "forumscraper": forum_debug,
         "direct": direct_debug,
+        "pulsemarket": pulse_debug if not forum_only else {"status": "skipped_forum_only"},
         "generic": discovery_debug,
     }
     discovery_stats["forumscraper_rows"] = len(forum_rows)

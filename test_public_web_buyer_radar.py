@@ -175,5 +175,70 @@ class PublicWebBuyerRadarTests(unittest.TestCase):
             ["https://www.expat.com/en/forum/europe/cyprus/north-cyprus/123456-looking-to-buy.html"],
         )
 
+class PulseMarketSourceRegressionTests(unittest.TestCase):
+    """Marketplace summaries must never mix sales, rentals or unrelated URLs."""
+
+    def test_only_individual_same_origin_buyer_listing_links(self):
+        html = """
+        <main>
+          <article><a href="/listing/123-buy"><h3>Куплю квартиру 1+1 Four Seasons Life</h3></a></article>
+          <article><a href="/listing/456-buy"><h3>Ищу квартиру 2+1 в Гирне</h3></a></article>
+          <article><a href="/listing/789-rent"><h3>Ищу в аренду квартиру 2+1</h3></a></article>
+          <article><a href="https://evil.example.com/tracker"><h3>Куплю квартиру 3+1</h3></a></article>
+          <article><h3>Ищу квартиру в Royal Sun Residence</h3><a href="/listing/unrelated">not same headline</a></article>
+          <article><a href="/blog/market"><h3>Куплю квартиру 1+1</h3></a></article>
+          <article><a href="/listing/666-sale"><h3>Продам квартиру 2+1</h3></a></article>
+        </main>
+        """
+        rows, stats = web.extract_pulsemarket_card_rows(html)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual([r["url"] for r in rows], [
+            "https://web.pulsemarket.eu/listing/123-buy",
+            "https://web.pulsemarket.eu/listing/456-buy",
+        ])
+        self.assertGreaterEqual(stats["unlinked_buyer_cards"], 1)
+        self.assertTrue(all(r["source"] == "PulseMarket" for r in rows))
+        self.assertTrue(all(not r["rss_published"] for r in rows))
+        self.assertTrue(all(not r["implicit_nc"] for r in rows))
+
+    def test_homepage_and_outside_domains_never_become_buyer_urls(self):
+        for link in (
+            "/", "#buy", "javascript:void(0)", "/blog/advert",
+            "https://outsider.example/listing/1", "http://web.pulsemarket.eu/listing/1",
+        ):
+            with self.subTest(link=link):
+                self.assertEqual(
+                    web.pulsemarket_detail_url(web.PULSEMARKET_HOME, link), ""
+                )
+
+    def test_site_search_and_homepage_discovery_deduplicate(self):
+        from unittest.mock import MagicMock
+        html = '<a href="/ads/real-123"><h3>Куплю квартиру 2+1 в Искеле</h3></a>'
+        mock_resp = MagicMock()
+        mock_resp.text = html
+        mock_resp.raise_for_status.return_value = None
+        hits = [
+            {"url": "https://web.pulsemarket.eu/ads/real-123"},
+            {"url": "https://another.example.com/ads/real-123"},
+            {"url": "https://web.pulsemarket.eu/"},
+        ]
+        with patch.object(web.requests, "get", return_value=mock_resp), patch.object(
+            web, "bing_rss", return_value=hits
+        ):
+            rows, debug = web.discover_pulsemarket_rows()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(debug["linked_buyer_cards"], 1)
+        self.assertEqual(rows[0]["url"], "https://web.pulsemarket.eu/ads/real-123")
+
+    def test_unlinked_aggregator_message_can_not_become_sales_alert(self):
+        html = """
+        <section><h3>Ищу для клиента квартиру 2+1 в Гирне</h3>
+        <p>Покупка напрямую от собственников</p></section>
+        """
+        rows, stats = web.extract_pulsemarket_card_rows(html)
+        self.assertEqual(rows, [])
+        self.assertEqual(stats["unlinked_buyer_cards"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
