@@ -572,20 +572,35 @@ def detect_language(text: str) -> str:
     if re.search(r"[а-яё]", value, re.I):
         return "RU"
     low = value.casefold()
-    if re.search(r"[çğıöşüİı]", value) or any(x in low for x in (" arıyorum", " bakıyorum", " taşın", " yatırım", " daire", " kiralık", " oturma izni")):
-        return "TR"
-    if re.search(r"[ąćęłńóśźż]", low) or any(x in low for x in ("szukam", "szukamy", "chcę kupić", "kupie ", "kupię ", "mieszkanie", "nieruchomość", "nieruchomosci")):
+    # Match specific language grammar BEFORE broad diacritic detection.
+    # German "möchte" has ö; location names such as "İskele" have İ.
+    # Neither proves the surrounding buyer message is Turkish.
+    if re.search(r"[ąćęłńóśźż]", low) or any(x in low for x in (
+        "szukam", "szukamy", "chcę kupić", "kupie ", "kupię ",
+        "mieszkanie", "nieruchomość", "nieruchomosci",
+    )):
         return "PL"
-    if re.search(r"[äöüß]", low) or any(x in low for x in ("wohnung", "immobilie", "ich suche", "wir suchen", "kaufen", "grundbuch", "eigentumstitel")):
-        return "DE"
-    if re.search(r"\b(?:noord(?:elijk)?[ -]?cyprus|woning|woningen|vastgoed|huurwoning|kopen|huren|ik\s+zoek|wij\s+zoeken|ik\s+wil|op\s+zoek\s+naar)\b", low):
+    if re.search(
+        r"\b(?:noord(?:elijk)?[ -]?cyprus|woning|woningen|vastgoed|"
+        r"huurwoning|kopen|huren|ik\s+zoek|wij\s+zoeken|ik\s+wil|"
+        r"op\s+zoek\s+naar)\b", low
+    ):
         return "NL"
-    if re.search(r"\b(?:cipro\s+(?:del\s+)?nord|appartament\w*|acquist\w*|comprare|cerco|cerchiamo|vorrei|voglio|affitto|immobil\w*)\b", low):
+    if re.search(
+        r"\b(?:cipro\s+(?:del\s+)?nord|appartament\w*|acquist\w*|"
+        r"comprare|cerco|cerchiamo|vorrei|voglio|affitto|immobil\w*)\b", low
+    ):
         return "IT"
+    if re.search(r"\b(?:wohnung\w*|immobilie\w*|ich\s+suche|wir\s+suchen|kaufen|grundbuch|eigentumstitel|nord[ -]?zypern)\b", low) or (
+        re.search(r"[äöüß]", low)
+        and re.search(r"\b(?:ich|wir|suche|suchen|haus|wohnung)\b", low)
+    ):
+        return "DE"
+    if re.search(r"\b(?:sat[ıi]n\s+al|ar[ıi]yorum|bak[ıi]yorum|daire|yat[ıi]r[ıi]m|ta[şs][ıi]n)\w*\b", low) or re.search(r"[çğıöşüİı]", value):
+        return "TR"
     if re.search(r"[a-z]", value, re.I):
         return "EN"
     return "OTHER"
-
 
 def extract_region(text: str) -> str:
     mapping = [
