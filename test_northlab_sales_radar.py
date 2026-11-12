@@ -228,5 +228,103 @@ class NorthlabSalesRadarTests(unittest.TestCase):
         self.assertEqual(reason, "developer_showcase")
 
 
+    # Regression cases from the Nov 12 Telegram alerts: 12 false positives
+    # and one genuine buyer-intent post to preserve.
+    def test_regression_reddit_www_dns_support_not_sales(self):
+        self.assertReject(
+            "Help with website redirection. Hello, I'm looking for some help with issues I'm having "
+            "with my website. My website was originally hosted through Wix. The www prefix no longer "
+            "works; I get a privacy error and tried changing DNS settings.",
+            "unpaid_technical_support",
+        )
+
+    def test_regression_law_firm_buyer_stays_actionable(self):
+        lead, reason = radar.classify(
+            "I'm looking for a full stack web developer for a newly established law firm, "
+            "if you or anyone you know can develop a website please reply here with a portfolio, thanks!"
+        )
+        self.assertIsNotNone(lead, reason)
+        self.assertIn(lead["lead_class"], {"HOT PROJECT", "WARM PROJECT"})
+
+    def test_regression_marketing_article_11_reasons(self):
+        self.assertReject(
+            "11 Reasons Your Business May Need a Website - Grigora Blog. "
+            "Start with a real customer task rather than assuming every business needs a large online store.",
+            "editorial_or_guide",
+        )
+
+    def test_regression_marketing_article_duplicate(self):
+        self.assertReject(
+            "11 Reasons Your Business May Need a Website. Explore 11 practical benefits of a business website.",
+            "editorial_or_guide",
+        )
+
+    def test_regression_company_ranking_not_buyer(self):
+        self.assertReject(
+            "Top Web Development Companies in 2026 - Techreviewer.co. "
+            "When looking for a web developer, reading customer reviews and case studies helps select the right website development company.",
+            "editorial_or_guide",
+        )
+
+    def test_regression_upwork_marketplace_category_not_buyer(self):
+        self.assertTrue(radar.non_buyer_web_source(
+            "https://www.upwork.com/freelance-jobs/website-development/"
+        ))
+
+    def test_regression_telegram_russian_residence_permit(self):
+        self.assertReject(
+            "Геч ничего хранить не будет, карту вернули значит внж не нужен, аннулируют. "
+            "После одобрение у вас код для отслеживания приходит, открываете сайт и следите где ваш пластик",
+            "immigration_portal_help",
+        )
+
+    def test_regression_telegram_russian_tourist_visa(self):
+        self.assertReject(
+            "Здравствуйте, насколько я понял, теперь турвизу продлять нужно через интернет, "
+            "вот изучаю тему. Нашел тут куар код, перекидывает на сайт, а что там дальше выбирать?",
+            "immigration_portal_help",
+        )
+
+    def test_regression_facebook_50_dollar_websites_seller(self):
+        self.assertReject(
+            "Professional Web Developer | Websites Starting at Just $50. Need a website for your "
+            "business, brand, or idea? I build any type of website, fast, clean, and fully responsive.",
+            "service_provider_promo",
+        )
+
+    def test_regression_facebook_group_landing_is_not_post(self):
+        self.assertTrue(radar.non_buyer_web_source(
+            "https://www.facebook.com/groups/2327375611076477/"
+        ))
+
+    def test_regression_small_business_website_guide(self):
+        self.assertReject(
+            "Do I Need a Website for My Small Business? 5 Answers. For most, yes. "
+            "See when social media or a Google profile is enough.",
+            "editorial_or_guide",
+        )
+
+    def test_regression_web_design_sales_pitch_on_x(self):
+        self.assertReject(
+            "Need a website that does more than display a few pages? "
+            "From online shops to custom functionality, I can help build something around how your business actually works!",
+            "service_provider_promo",
+        )
+
+    def test_regression_facebook_business_sales_pitch(self):
+        self.assertReject(
+            "If you own a business, you need a website. It helps customers find you faster. "
+            "Need one? Tell me about your business let's get you a website.",
+            "service_provider_promo",
+        )
+
+    def test_regression_instagram_agency_sales_pitch(self):
+        self.assertReject(
+            "Need a website for your business? I'm currently taking on new projects. "
+            "Drop a comment or send me a DM. Let's talk.",
+            "service_provider_promo",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

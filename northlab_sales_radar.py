@@ -17,7 +17,7 @@ import requests
 import main as core
 import northlab_sales_source_hub as source_hub
 
-VERSION = "2.3-developer-showcase-guard"
+VERSION = "2.4-buyer-intent-and-source-guard"
 COLLECTION = "northlab_sales_project_leads"
 SCAN_COLLECTION = "northlab_sales_project_scans"
 TELEGRAM_HOURS = int(os.getenv("NORTHLAB_TELEGRAM_HOURS", "24"))
@@ -447,6 +447,67 @@ GLOBAL_TELEGRAM_QUERIES = [
 ]
 
 
+# Buyer/seller/editorial gates: do not infer a purchase from an advertising
+# question or from a website keyword in an informational/support post.
+SUPPLIER_PITCH_RE = re.compile(
+    r"(?:"
+    r"\bwebsites?\s+starting\s+at\s+(?:just\s+)?(?:\$|€|£)\s?\d+|"
+    r"\bi\s+build\s+(?:any\s+type\s+of|modern|responsive|professional)\s+websites?\b|"
+    r"\bi\s+can\s+help\s+(?:you\s+)?(?:build|create|design|develop)\b|"
+    r"\b(?:i(?:['’]?m|\s+am)|we(?:['’]?re|\s+are))\s+currently\s+taking\s+on\s+(?:new\s+)?projects?\b|"
+    r"\bif\s+you\s+own\s+a\s+business\b.{0,160}\b(?:need\s+(?:one|a\s+website)|get\s+you\s+a\s+website)\b|"
+    r"\b(?:need\s+(?:one|a\s+website)\?|tell\s+me\s+about\s+your\s+business)\b.{0,120}\b(?:get\s+you\s+a\s+website|i\s+(?:can|will)\s+build)\b"
+    r")",
+    re.I | re.S,
+)
+
+EDITORIAL_GUIDE_RE = re.compile(
+    r"(?:"
+    r"\b\d+\s+reasons?\s+(?:why|your)\s+business\b|"
+    r"\b\d+\s+reasons?\s+your\s+business\s+may\s+need\b|"
+    r"\bdo\s+i\s+need\s+a\s+website\s+for\s+my\s+small\s+business\b|"
+    r"\btop\s+web\s+development\s+companies\s+in\s+\d{4}\b|"
+    r"\breading\s+customer\s+reviews\s+and\s+case\s+studies\b|"
+    r"\bexplore\s+\d+\s+practical\s+benefits\b"
+    r")",
+    re.I | re.S,
+)
+
+UNPAID_TECH_SUPPORT_RE = re.compile(
+    r"(?:"
+    r"\bhelp\s+with\s+website\s+redirection\b|"
+    r"\bwww\s+prefix\b.{0,200}\b(?:privacy\s+error|(?:no\s+longer|doesn['’]?t)\s+work|dns)\b|"
+    r"\b(?:privacy\s+error|dns\s+settings)\b.{0,160}\bwww\s+prefix\b"
+    r")",
+    re.I | re.S,
+)
+
+IMMIGRATION_PORTAL_RE = re.compile(
+    r"(?:\bвнж\b|\bтурвиз\w*\b|\bкочан\b|\bпластик\b.{0,100}\b(?:сайт|код|отслеживан)|"
+    r"\b(?:визу|визы|визов|виза)\b.{0,140}\b(?:сайт|интернет|продл|qr|куар)|"
+    r"\b(?:сайт|интернет|продл)\b.{0,140}\b(?:визу|визы|визов|виза))",
+    re.I | re.S,
+)
+
+NON_BUYER_WEB_HOSTS = {
+    "upwork.com", "fiverr.com", "freelancer.com", "peopleperhour.com",
+    "guru.com", "bionluk.com",
+}
+
+
+def non_buyer_web_source(url: str) -> bool:
+    """Filter marketplace category pages and Facebook group landing pages."""
+    parsed = urllib.parse.urlparse(str(url or ""))
+    host = parsed.netloc.casefold().removeprefix("www.")
+    if any(host == blocked or host.endswith("." + blocked) for blocked in NON_BUYER_WEB_HOSTS):
+        return True
+    if host in {"facebook.com", "m.facebook.com"}:
+        # A group directory is not a person asking for a website.
+        if re.fullmatch(r"/groups/\d+/?", parsed.path):
+            return True
+    return False
+
+
 def detect_language(text: str) -> str:
     if re.search(r"[а-яё]", text or "", re.I):
         return "RU"
@@ -465,6 +526,14 @@ def classify(text: str) -> tuple[dict[str, Any] | None, str]:
     value = " ".join(str(text or "").split())
     if not value:
         return None, "empty"
+    if SUPPLIER_PITCH_RE.search(value):
+        return None, "service_provider_promo"
+    if EDITORIAL_GUIDE_RE.search(value):
+        return None, "editorial_or_guide"
+    if UNPAID_TECH_SUPPORT_RE.search(value):
+        return None, "unpaid_technical_support"
+    if IMMIGRATION_PORTAL_RE.search(value):
+        return None, "immigration_portal_help"
     if JOB_SEEKER_RE.search(value):
         return None, "job_seeker"
     if EMPLOYMENT_RE.search(value):
@@ -796,6 +865,9 @@ def scan_web(db_client, now: datetime, debug: dict[str, Any]) -> list[dict[str, 
             seen.add(key)
             blob = f"{row.get('title','')} {row.get('text','')}"
             host = urllib.parse.urlparse(str(row.get("url") or "")).netloc.casefold().removeprefix("www.")
+            if non_buyer_web_source(str(row.get("url") or "")):
+                debug["web_rejects"]["non_buyer_web_source"] += 1
+                continue
             if host in KNOWN_PLATFORM_HOSTS or PLATFORM_PROMO_RE.search(blob):
                 debug["web_rejects"]["platform_or_product_promo"] += 1
                 continue
