@@ -951,7 +951,7 @@ class BroadIntentTests(unittest.TestCase):
             "author": "@real_buyer",
             "message": "Куплю квартиру 3+1 в Искеле",
         }
-        with patch.object(v6.core, "telegram") as telegram:
+        with patch.object(v6.core, "telegram", return_value=True) as telegram:
             self.assertTrue(v6.notify_lead(lead, "NEW"))
             telegram.assert_called_once()
 
@@ -1004,14 +1004,15 @@ class BroadIntentTests(unittest.TestCase):
                     lead, reason = v6.classify_text(phrase, group="North Cyprus Property")
                     self.assertIsNotNone(lead, (phrase, reason))
                     self.assertEqual("BUYER", lead["intent_type"])
-    def test_agent_searching_for_client_is_rejected(self):
+    def test_explicit_agent_purchase_demand_is_kept(self):
         with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
             lead, reason = v6.classify_text(
                 "Ищу для клиента Северный Кипр. Только от собственника. Куплю готовые апартаменты с видом на море. Бюджет до £80 000.",
                 group="Северный Кипр Недвижимость",
             )
-        self.assertIsNone(lead)
-        self.assertEqual(reason, "agent_or_client_representative")
+        self.assertIsNotNone(lead, reason)
+        self.assertEqual(lead["intent_type"], "BUYER")
+        self.assertIn("agent_client_purchase_request", lead["lead_reasons"])
 
     def test_direct_owner_preference_buyer_is_still_accepted(self):
         with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
@@ -1074,14 +1075,16 @@ class BroadIntentTests(unittest.TestCase):
         self.assertIsNone(lead)
         self.assertEqual(reason, "blocked_buyer_author")
 
-    def test_ready_client_intermediary_is_rejected(self):
-        lead, reason = v6.classify_text(
-            "I am urgently looking for a 2+1 apartment in Famagusta for a ready client; the budget is between £55,000 and £65,000. The client is ready to proceed.",
-            group="СЕВЕРНЫЙ КИПР | НЕДВИЖИМОСТЬ",
-            author="@cyprus_eren",
-        )
-        self.assertIsNone(lead)
-        self.assertEqual(reason, "agent_or_client_representative")
+    def test_ready_client_with_purchase_budget_is_partner_lead(self):
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            lead, reason = v6.classify_text(
+                "I am urgently looking for a 2+1 apartment in Famagusta for a ready client; the budget is between £55,000 and £65,000. The client is ready to proceed.",
+                group="СЕВЕРНЫЙ КИПР | НЕДВИЖИМОСТЬ",
+                author="@cyprus_eren",
+            )
+        self.assertIsNotNone(lead, reason)
+        self.assertEqual(lead["intent_type"], "BUYER")
+        self.assertIn("agent_client_purchase_request", lead["lead_reasons"])
 
     def test_gp_real_estate_author_is_blocked(self):
         lead, reason = v6.classify_text(
