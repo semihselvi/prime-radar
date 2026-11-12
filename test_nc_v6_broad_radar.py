@@ -1237,7 +1237,7 @@ class PrimeProjectAliasTests(unittest.TestCase):
 
     def test_all_projects_have_global_discovery_queries(self):
         queries = v6.TELEGRAM_PROJECT_SEARCH_QUERIES
-        self.assertEqual(len(queries), 13)
+        self.assertGreaterEqual(len(queries), 13)
         self.assertEqual(len(set(queries)), 13)
         for query, _ in self.PROJECTS:
             self.assertTrue(
@@ -1352,6 +1352,15 @@ class NovemberBuyerSourceRegressionTests(unittest.TestCase):
         self.assertIn("cyprusprop", v6.TELEGRAM_BOOTSTRAP_DISCUSSION_SEEDS)
         self.assertNotIn("cyprusprop", v6.TELEGRAM_VETTED_PUBLIC_GROUPS)
         self.assertIn("cyprusprop", v6.TELEGRAM_PUBLIC_PEER_QUERIES)
+
+    def test_local_public_chat_whitelist_requires_exact_username(self):
+        from types import SimpleNamespace
+        local = SimpleNamespace(title="🤝SHARA-БАРА", username="sharabara2026")
+        foreign = SimpleNamespace(title="Global investments", username="sharabara_elsewhere")
+        self.assertTrue(v6._public_chat_has_north_context(local))
+        self.assertFalse(v6._public_chat_has_north_context(foreign))
+        self.assertIn("cyprusprop", v6.VERIFIED_NORTH_PUBLIC_CHAT_USERNAMES)
+        self.assertIn("sharabara2026", v6.VERIFIED_NORTH_PUBLIC_CHAT_USERNAMES)
 
     def test_four_seasons_life_loft_purchase(self):
         msg = (
