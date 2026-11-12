@@ -2,6 +2,7 @@
 # Production verification: buyer recall and Telegram delivery fix 2026-11-12.
 # Project alias update: 13 Prime residential targets verified 2026-11-12.
 # Buyer language expansion: DE PL NL IT regression PASS 2026-11-12.
+# Buyer source coverage: cyprusprop + PulseMarket reviewed, 184 tests PASS (2026-11-12).
 # Each job gets an independent timeout while sharing no concurrent Telegram session.
 name: PRIME KIBRIS - Buyer Radar
 # smart-notify explicit buyer gate rerun
