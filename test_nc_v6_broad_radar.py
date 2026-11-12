@@ -1238,7 +1238,7 @@ class PrimeProjectAliasTests(unittest.TestCase):
     def test_all_projects_have_global_discovery_queries(self):
         queries = v6.TELEGRAM_PROJECT_SEARCH_QUERIES
         self.assertGreaterEqual(len(queries), 13)
-        self.assertEqual(len(set(queries)), 13)
+        self.assertEqual(len(set(queries)), len(queries))
         for query, _ in self.PROJECTS:
             self.assertTrue(
                 any(v6.extract_project(phrase) == v6.extract_project(query) for phrase in queries),
