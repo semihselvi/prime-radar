@@ -6,8 +6,10 @@ on:
     paths:
       - "main.py"
       - "nc_v6_broad_radar.py"
+      - "public_web_buyer_radar.py"
       - "northlab_lead_radar_core.py"
       - "test_nc_v6_broad_radar.py"
+      - "test_public_web_buyer_radar.py"
       - "test_northlab_lead_radar_core.py"
       - "test_prime_source_bootstrap.py"
       - ".github/workflows/prime-buyer-regression.yml"
@@ -31,7 +33,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Compile modified runtime
-        run: python -m py_compile main.py nc_v6_broad_radar.py northlab_lead_radar_core.py
+        run: python -m py_compile main.py nc_v6_broad_radar.py northlab_lead_radar_core.py public_web_buyer_radar.py
       - name: Unit and missed-lead regression suite
         run: |
-          python -m unittest -q test_nc_v6_broad_radar.py test_northlab_lead_radar_core.py test_prime_source_bootstrap.py
+          python -m unittest -q test_nc_v6_broad_radar.py test_northlab_lead_radar_core.py test_prime_source_bootstrap.py test_public_web_buyer_radar.py
