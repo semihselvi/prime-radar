@@ -1094,5 +1094,60 @@ class BroadIntentTests(unittest.TestCase):
         self.assertEqual(reason, "blocked_buyer_author")
 
 
+class PrimeBuyerRecallRegressionTests(unittest.TestCase):
+    def test_project_names_provide_north_cyprus_context(self):
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            for text in (
+                "Куплю студию в Caesar Resort, бюджет £65000.",
+                "Looking to buy a 2+1 apartment in Grand Sapphire.",
+                "Куплю квартиру 2+1 в Гранд Сапфир.",
+            ):
+                with self.subTest(text=text):
+                    lead, reason = v6.classify_text(text, group="")
+                    self.assertIsNotNone(lead, reason)
+                    self.assertEqual(lead["intent_type"], "BUYER")
+                    self.assertTrue(v6.has_nc_geo(text))
+                    self.assertTrue(v6.candidate_signal(text))
+
+    def test_explicit_partner_purchase_is_kept(self):
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            for text in (
+                "Ищу студию в Caesar Resort для двух клиентов на покупку, бюджет £65000.",
+                "Клиент хочет купить квартиру в Grand Sapphire, бюджет £175000.",
+                "My client wants to purchase a 2+1 apartment in Grand Sapphire.",
+                "Müşterim İskele'de 2+1 daire satın almak istiyor.",
+            ):
+                with self.subTest(text=text):
+                    lead, reason = v6.classify_text(text, group="")
+                    self.assertIsNotNone(lead, reason)
+                    self.assertEqual(lead["intent_type"], "BUYER")
+                    self.assertIn("agent_client_purchase_request", lead["lead_reasons"])
+                    self.assertFalse(v6._hard_reject(text))
+
+    def test_ambiguous_agent_stays_out_and_rent_is_never_buyer(self):
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            lead, reason = v6.classify_text(
+                "Ищу студию в Caesar Resort для двух клиентов.",
+                group="North Cyprus Expats",
+            )
+            self.assertIsNone(lead)
+            self.assertEqual(reason, "agent_or_client_representative")
+            lead, reason = v6.classify_text(
+                "Ищу студию в Caesar Resort для двух клиентов на аренду.",
+                group="North Cyprus Expats",
+            )
+            self.assertIsNone(lead)
+            self.assertIn(reason, {"agent_or_client_representative", "rental_hard_excluded"})
+
+    def test_blocked_author_still_blocked(self):
+        lead, reason = v6.classify_text(
+            "Куплю 2+1 в Grand Sapphire",
+            group="North Cyprus Expats",
+            author="@batuhanarslann7",
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "blocked_buyer_author")
+
+
 if __name__ == "__main__":
     unittest.main()
