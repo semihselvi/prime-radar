@@ -39,11 +39,45 @@ for _module in (radar, radar.v53, radar.v53.v52, radar.v53.gate, v5):
 
 # Project names can be the only North-Cyprus location in a buyer message.
 # Keep aliases specific; generic words such as "resort" are not enough.
+NC_PROJECT_ALIASES = (
+    ("Caesar Resort", r"\bcaesar\s+resort\b|\bцезарь\s+резорт\b"),
+    ("Caesar Blue", r"\bcaesar\s+blue\b"),
+    ("Grand Sapphire", r"\bgrand\s+sapphire\b|\bгранд\s+сапфир\w*\b"),
+    ("Royal Sun Elite", r"\broyal\s*sun\s*elite\b|\bроял(?:ь)?\s+сан\s+элит\b"),
+    ("Royal Sun", r"\broyal\s*sun\b|\bроял(?:ь)?\s+сан\b"),
+    ("Courtyard", r"\bcourt[\s-]*yard\b|\bкортъ?ярд\b"),
+    ("Abelia", r"\b(?:abelia|абелия)\b"),
+    ("Riverside", r"\briver[\s-]*side\b|\bривер\s*сайд\b"),
+    ("Park Residence", r"\bpark\s+residen(?:ce|ces)\b|\bпарк\s+резиденс\b"),
+    ("Neo Residence", r"\bneo\s+residen(?:ce|ces)\b|\bнео\s+резиденс\b"),
+    ("Four Seasons", r"\bfour\s+seasons\b|\bфор\s+сизонс\b"),
+    ("Sunrise", r"\bsun[\s-]*rise\b|\bсанрайз\b"),
+    ("Orchard", r"\borchard\b|\bорчард\b"),
+    ("Elysium 1", r"\b(?:elysium|elsyium)\s*(?:1|i)\b|\bэлизиум\s*(?:1|i)\b"),
+    ("Elysium 2", r"\b(?:elysium|elsyium)\s*(?:2|ii)\b|\bэлизиум\s*(?:2|ii)\b"),
+    ("Elysium", r"\b(?:elysium|elsyium)\b|\bэлизиум\b"),
+    ("Fiora", r"\bfiora\b|\bфиора\b"),
+)
+# Presence of these names identifies a property, not automatically the country.
 NC_PROJECT_RE = re.compile(
-    r"(?:\bcaesar\s+(?:resort|blue)\b|\bgrand\s+sapphire\b|"
-    r"\bцезарь\s+резорт\b|\bгранд\s+сапфир\w*\b)",
+    "|".join(f"(?:{pattern})" for _name, pattern in NC_PROJECT_ALIASES),
     re.I,
 )
+# Names shared with hotels, stores and overseas developments must NOT count
+# as geographic proof. They need North Cyprus in the message or chat context.
+NC_PROJECT_GEO_RE = re.compile(
+    r"(?:\bcaesar\s+(?:resort|blue)\b|\bgrand\s+sapphire\b|"
+    r"\bцезарь\s+резорт\b|\bгранд\s+сапфир\w*\b|"
+    r"\broyal\s*sun\s*elite\b|\bроял(?:ь)?\s+сан\s+элит\b)",
+    re.I,
+)
+
+
+def extract_project(text: str) -> str:
+    for name, pattern in NC_PROJECT_ALIASES:
+        if re.search(pattern, text or "", re.I):
+            return name
+    return ""
 
 NC_GEO_RE = re.compile(
     r"(?:"
@@ -505,7 +539,7 @@ def has_nc_geo(text: str) -> bool:
     return bool(
         NC_GEO_RE.search(text or "")
         or NC_GEO_RU_RE.search(text or "")
-        or NC_PROJECT_RE.search(text or "")
+        or NC_PROJECT_GEO_RE.search(text or "")
     )
 
 
@@ -900,6 +934,7 @@ def classify_text(text: str, *, group: str = "", author: str = "", explicit_geo:
         "intent_score": min(98, score),
         "language": detect_language(own),
         "estimated_region": extract_region(own),
+        "estimated_project": extract_project(own),
         "estimated_budget": extract_budget(own),
         "important_criteria": criteria(own),
         "lead_reasons": reasons,
@@ -1057,6 +1092,7 @@ def strict_extra_candidate_signal(text: str) -> bool:
     )
     property_context = bool(
         PROPERTY_RE.search(own)
+        or NC_PROJECT_RE.search(own)
         or (UNIT_LAYOUT_RE.search(own) and BUY_RE.search(own))
     )
     return bool(geo and buyer_side and property_context)
@@ -1291,8 +1327,26 @@ TELEGRAM_GLOBAL_BUYER_QUERIES = (
     "szukam 2+1 Cypr Północny",
 )
 
+# Project-discovery terms complement generic purchase expressions.
+# Results are filtered for North Cyprus and explicit buyer intent downstream.
+TELEGRAM_PROJECT_SEARCH_QUERIES = (
+    "Courtyard",
+    "Abelia",
+    "Riverside",
+    "Park Residence",
+    "Royal Sun",
+    "Royal Sun Elite",
+    "Neo Residence",
+    "Four Seasons",
+    "Sunrise",
+    "Orchard",
+    "Elysium 1",
+    "Elysium 2",
+    "Fiora",
+)
 TELEGRAM_GLOBAL_SEARCH_QUERIES = (
     *TELEGRAM_GLOBAL_BUYER_QUERIES,
+    *TELEGRAM_PROJECT_SEARCH_QUERIES,
     *TELEGRAM_GLOBAL_PUBLIC_QUERIES,
 )
 
@@ -2023,19 +2077,20 @@ async def broad_telegram_scan(db_client, started):
         for query in ranked_global_queries:
             DEBUG["global_search_queries"] += 1
             is_buyer_query = query in TELEGRAM_GLOBAL_BUYER_QUERIES or query in learned_query_set
+            is_project_query = query in TELEGRAM_PROJECT_SEARCH_QUERIES
             if is_buyer_query:
                 DEBUG["global_search_buyer_queries"] += 1
             else:
                 DEBUG["global_search_broad_queries"] += 1
 
             historical_score = learning.yield_score(query_history.get(query, {}))
-            query_limit = 120 if is_buyer_query else 40
+            query_limit = 60 if is_project_query else 120 if is_buyer_query else 40
             if is_buyer_query and historical_score >= 20:
                 query_limit = 160
-            query_days = global_days if is_buyer_query else min(global_days, 7)
+            query_days = global_days if (is_buyer_query or is_project_query) else min(global_days, 7)
             query_cutoff = datetime.now(timezone.utc) - timedelta(days=query_days)
             qstat = DEBUG["global_search_query_stats"].setdefault(query, {
-                "kind": "buyer" if is_buyer_query else "broad",
+                "kind": "buyer" if is_buyer_query else "project" if is_project_query else "broad",
                 "raw": 0,
                 "fresh": 0,
                 "public": 0,
@@ -3170,7 +3225,8 @@ def notify_lead(lead: dict[str, Any], prefix: str = "NEW") -> bool:
         f"Kaynak/Grup: {lead.get('group') or lead.get('title') or lead.get('source','')}\n"
         f"Dil: {lead.get('language','')} | Intent: {lead.get('intent_score',0)}/100\n"
         f"Yaş: {lead.get('message_age_days','-')} gün | Güncellik: {lead.get('freshness','-')}\n"
-        f"Bölge: {lead.get('estimated_region') or '-'} | Bütçe: {lead.get('estimated_budget') or '-'}\n"
+        f"Bölge: {lead.get('estimated_region') or '-'} | Proje: {lead.get('estimated_project') or extract_project(message_text) or '-'}\n"
+        f"Bütçe: {lead.get('estimated_budget') or '-'}\n"
         f"Kriterler: {criteria_text}\n"
         f"Neden: {reasons}\n\n"
         f"{_clip(lead.get('message') or lead.get('text') or '', 900)}\n\n"
