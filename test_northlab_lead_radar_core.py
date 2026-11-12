@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import northlab_lead_radar_core as core
 
@@ -148,6 +148,16 @@ class PrimeBuyerNotificationRecoveryTests(unittest.TestCase):
         self.assertEqual(result["notified"], 1)
         notify.assert_called_once()
         mark.assert_called_once()
+
+
+class PrimeBuyerScanFailureTests(unittest.IsolatedAsyncioTestCase):
+    async def test_unauthorized_telegram_scan_fails_workflow(self):
+        with patch.object(core.radar.core, "db", return_value=MagicMock()), patch.object(
+            core.radar, "broad_telegram_scan", new_callable=AsyncMock
+        ) as scan:
+            scan.return_value = {"status": "skipped_unauthorized", "new_leads": []}
+            with self.assertRaisesRegex(RuntimeError, "skipped_unauthorized"):
+                await core.scan_once()
 
 
 if __name__ == "__main__":
