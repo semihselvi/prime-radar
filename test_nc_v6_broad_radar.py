@@ -1362,6 +1362,21 @@ class NovemberBuyerSourceRegressionTests(unittest.TestCase):
         self.assertIn("cyprusprop", v6.VERIFIED_NORTH_PUBLIC_CHAT_USERNAMES)
         self.assertIn("sharabara2026", v6.VERIFIED_NORTH_PUBLIC_CHAT_USERNAMES)
 
+    def test_project_only_buyer_from_verified_local_chat_has_geo_context(self):
+        from types import SimpleNamespace
+        chat = SimpleNamespace(title="🤝SHARA-БАРА", username="sharabara2026")
+        text = "Куплю 1+1 в Orchard."
+        self.assertFalse(v6.has_nc_geo(text))
+        self.assertTrue(v6._public_chat_has_north_context(chat))
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            lead, reason = v6.classify_text(
+                text, group=chat.title,
+                explicit_geo=v6._public_chat_has_north_context(chat),
+            )
+        self.assertIsNotNone(lead, reason)
+        self.assertEqual(lead["intent_type"], "BUYER")
+        self.assertEqual(lead["estimated_project"], "Orchard")
+
     def test_four_seasons_life_loft_purchase(self):
         msg = (
             "Куплю квартиру 1+1 Loft в комплексе Four Seasons Life, "
