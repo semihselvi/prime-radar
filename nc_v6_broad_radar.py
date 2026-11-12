@@ -44,12 +44,14 @@ NC_PROJECT_ALIASES = (
     ("Caesar Blue", r"\bcaesar\s+blue\b"),
     ("Grand Sapphire", r"\bgrand\s+sapphire\b|\bгранд\s+сапфир\w*\b"),
     ("Royal Sun Elite", r"\broyal\s*sun\s*elite\b|\bроял(?:ь)?\s+сан\s+элит\b"),
+    ("Royal Sun Residence", r"\broyal\s*sun\s*residen(?:ce|ces)\b|\bроял(?:ь)?\s+сан\s+резиденс\b"),
     ("Royal Sun", r"\broyal\s*sun\b|\bроял(?:ь)?\s+сан\b"),
     ("Courtyard", r"\bcourt[\s-]*yard\b|\bкортъ?ярд\b"),
     ("Abelia", r"\b(?:abelia|абелия)\b"),
     ("Riverside", r"\briver[\s-]*side\b|\bривер\s*сайд\b"),
     ("Park Residence", r"\bpark\s+residen(?:ce|ces)\b|\bпарк\s+резиденс\b"),
     ("Neo Residence", r"\bneo\s+residen(?:ce|ces)\b|\bнео\s+резиденс\b"),
+    ("Four Seasons Life", r"\b(?:four|4)\s+seasons\s+life\b|\bфор\s+сизонс\s+лайф\b"),
     ("Four Seasons", r"\bfour\s+seasons\b|\bфор\s+сизонс\b"),
     ("Sunrise", r"\bsun[\s-]*rise\b|\bсанрайз\b"),
     ("Orchard", r"\borchard\b|\bорчард\b"),
@@ -1227,6 +1229,9 @@ TELEGRAM_GLOBAL_BUYER_QUERIES = (
     "Caesar квартира",
     "Искеле квартира титул",
     "Гирне квартира титул",
+    "Four Seasons Life куплю",
+    "Роял Сан Резиденс покупка",
+    "Grand Sapphire куплю 2+1",
     # English.
     "looking to buy apartment",
     "looking to buy property",
@@ -1393,8 +1398,10 @@ TELEGRAM_PROJECT_SEARCH_QUERIES = (
     "Park Residence",
     "Royal Sun",
     "Royal Sun Elite",
+    "Royal Sun Residence",
     "Neo Residence",
     "Four Seasons",
+    "Four Seasons Life",
     "Sunrise",
     "Orchard",
     "Elysium 1",
@@ -1460,6 +1467,8 @@ TELEGRAM_PUBLIC_PEER_QUERIES = (
     "Cipro del Nord",
     "Cipro Nord",
     "Italiani Cipro del Nord",
+    "СЕВЕРНЫЙ КИПР НЕДВИЖИМОСТЬ",
+    "cyprusprop",
 )
 
 # Public discussion groups already verified outside Telegram search. Keep this
@@ -1478,6 +1487,7 @@ TELEGRAM_BOOTSTRAP_DISCUSSION_SEEDS = (
     "northern_cyprus_forum",
     "NCyprus_Iskele",
     "sharabara2026",  # Public lead source; preview only, never auto-join
+    "cyprusprop",     # Observed November buyer posts; read-only public preview
 )
 
 # Group discovery terms are intentionally multilingual. We search Telegram's
@@ -1611,7 +1621,7 @@ def global_public_candidate_signal(text: str, author: str = "", has_north_contex
         return False
     north = bool(has_nc_geo(own) or has_north_context)
     buyer_side = bool(BUY_RE.search(own) or BUY_INTENT_VARIANTS_RE.search(own) or DEMAND_RE.search(own) or PURCHASE_QUALIFIER_RE.search(own))
-    property_context = bool(PROPERTY_RE.search(own) or (UNIT_LAYOUT_RE.search(own) and buyer_side))
+    property_context = bool(PROPERTY_RE.search(own) or NC_PROJECT_RE.search(own) or (UNIT_LAYOUT_RE.search(own) and buyer_side))
     return bool(north and buyer_side and property_context)
 
 
