@@ -1353,6 +1353,16 @@ class NovemberBuyerSourceRegressionTests(unittest.TestCase):
         self.assertNotIn("cyprusprop", v6.TELEGRAM_VETTED_PUBLIC_GROUPS)
         self.assertIn("cyprusprop", v6.TELEGRAM_PUBLIC_PEER_QUERIES)
 
+    def test_public_web_real_buyer_alert_not_blocked_as_debug(self):
+        genuine = (
+            "🔥 PRIME BUYER RADAR | HOT BUYER [PUBLIC WEB]\\n"
+            "Platform: PulseMarket\\n"
+            "Куплю квартиру 1+1 Four Seasons Life"
+        )
+        diagnostics = "🌐 PRIME RADAR | PUBLIC WEB\\nTaranan sayfa: 200 | BUYER: 0"
+        self.assertTrue(v6._buyer_only_message_allowed(genuine))
+        self.assertFalse(v6._buyer_only_message_allowed(diagnostics))
+
     def test_local_public_chat_whitelist_requires_exact_username(self):
         from types import SimpleNamespace
         local = SimpleNamespace(title="🤝SHARA-БАРА", username="sharabara2026")
