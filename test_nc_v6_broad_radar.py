@@ -1416,6 +1416,16 @@ class NovemberBuyerSourceRegressionTests(unittest.TestCase):
         self.assertEqual(v6.extract_project("Four Seasons Life"), "Four Seasons Life")
         self.assertEqual(v6.extract_project("Four Seasons"), "Four Seasons")
 
+    def test_exact_local_project_names_can_supply_geo_not_generic_short_names(self):
+        self.assertTrue(v6.has_nc_geo("Four Seasons Life"))
+        self.assertTrue(v6.has_nc_geo("Роял Сан Резиденс"))
+        self.assertFalse(v6.has_nc_geo("Four Seasons"))
+        self.assertFalse(v6.has_nc_geo("Royal Sun"))
+        with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
+            lead, reason = v6.classify_text("Куплю 1+1 Four Seasons Life", group="")
+        self.assertIsNotNone(lead, reason)
+        self.assertEqual(lead["estimated_project"], "Four Seasons Life")
+
     def test_ambiguous_monthly_owner_request_is_not_notified_as_buyer(self):
         msg = "Ищу 2+1 в искеле от собственника с помесячной оплатой"
         with patch.dict("os.environ", {"RADAR_SALES_ONLY": "1"}):
