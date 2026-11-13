@@ -1,11 +1,11 @@
 {
   "status": "completed",
-  "scanned_at": "2026-11-12T23:45:11.669024+00:00",
+  "scanned_at": "2026-11-13T06:38:45.191034+00:00",
   "groups": 122,
-  "messages": 20400,
-  "matches": 11,
+  "messages": 20479,
+  "matches": 12,
   "niche_studio": 3,
-  "one_bed": 8,
+  "one_bed": 9,
   "unlinked": 0,
   "errors": 0,
   "public_offers": [
@@ -43,6 +43,12 @@
       "kind": "1+1",
       "date": "2026-11-11T10:29:39+00:00",
       "url": "https://t.me/severnyy_kipr_chat/183215",
+      "price_mentions": []
+    },
+    {
+      "kind": "1+1",
+      "date": "2026-11-11T10:28:41+00:00",
+      "url": "https://t.me/northern_cyprus_forum/344541",
       "price_mentions": []
     },
     {
