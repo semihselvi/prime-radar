@@ -2,58 +2,51 @@
   "status": "success",
   "version": "2.3-developer-showcase-guard",
   "telegram_groups": 93,
-  "telegram_messages": 1196,
+  "telegram_messages": 1242,
   "telegram_global_queries": 22,
   "telegram_global_messages": 227,
-  "web_raw": 221,
+  "web_raw": 210,
   "web_accepted": 0,
-  "hub_raw": 125,
-  "hub_accepted": 1,
+  "hub_raw": 25,
+  "hub_accepted": 0,
   "hub_source_counts": {
     "reddit": 25,
     "bluesky": 0,
-    "youtube": 100,
+    "youtube": 0,
     "forums": 0
   },
-  "hub_youtube_urls": 1,
+  "hub_youtube_urls": 0,
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 667,
-    "marketplace_ad": 63,
-    "education": 33,
-    "duplicate_text": 267,
-    "crypto_or_earnings_recruitment": 1,
-    "bot_author": 142,
-    "weak_project_signal": 21,
-    "service_provider_promo": 2,
-    "job_seeker": 5,
-    "employment_vacancy": 6,
-    "news_content": 11
+    "no_project_signal": 689,
+    "marketplace_ad": 64,
+    "duplicate_text": 297,
+    "bot_author": 156,
+    "news_content": 4,
+    "education": 29,
+    "employment_vacancy": 5,
+    "service_provider_promo": 1,
+    "weak_project_signal": 14,
+    "job_seeker": 5
   },
   "web_rejects": {
-    "no_project_signal": 144,
-    "platform_or_product_promo": 14,
-    "weak_project_signal": 21,
-    "education": 1
+    "no_project_signal": 132,
+    "platform_or_product_promo": 16,
+    "weak_project_signal": 25,
+    "service_provider_promo": 5,
+    "employment_vacancy": 1
   },
   "hub_rejects": {
-    "no_project_signal": 86,
-    "education": 12,
-    "weak_project_signal": 25,
-    "reference_site_mention": 1
+    "no_project_signal": 18,
+    "weak_project_signal": 6,
+    "education": 1
   },
-  "accepted_classes": {
-    "HOT PROJECT": 1
-  },
-  "project_types": {
-    "WEBSITE": 1
-  },
-  "languages": {
-    "EN": 1
-  },
-  "started_at": "2026-11-13T09:58:40.374783+00:00",
-  "completed_at": "2026-11-13T09:59:48.709275+00:00",
+  "accepted_classes": {},
+  "project_types": {},
+  "languages": {},
+  "started_at": "2026-11-13T16:43:33.604572+00:00",
+  "completed_at": "2026-11-13T16:44:32.896213+00:00",
   "new_leads": 0,
   "alerts": 0
 }
