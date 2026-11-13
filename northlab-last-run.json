@@ -2,51 +2,58 @@
   "status": "success",
   "version": "2.3-developer-showcase-guard",
   "telegram_groups": 93,
-  "telegram_messages": 1242,
+  "telegram_messages": 1237,
   "telegram_global_queries": 22,
   "telegram_global_messages": 227,
-  "web_raw": 210,
+  "web_raw": 218,
   "web_accepted": 0,
-  "hub_raw": 25,
-  "hub_accepted": 0,
+  "hub_raw": 125,
+  "hub_accepted": 1,
   "hub_source_counts": {
     "reddit": 25,
     "bluesky": 0,
-    "youtube": 0,
+    "youtube": 100,
     "forums": 0
   },
-  "hub_youtube_urls": 0,
+  "hub_youtube_urls": 1,
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 689,
-    "marketplace_ad": 64,
-    "duplicate_text": 297,
-    "bot_author": 156,
+    "no_project_signal": 694,
+    "marketplace_ad": 61,
+    "duplicate_text": 281,
+    "education": 34,
+    "job_seeker": 5,
+    "bot_author": 159,
     "news_content": 4,
-    "education": 29,
-    "employment_vacancy": 5,
     "service_provider_promo": 1,
     "weak_project_signal": 14,
-    "job_seeker": 5
+    "crypto_or_earnings_recruitment": 2,
+    "employment_vacancy": 4
   },
   "web_rejects": {
-    "no_project_signal": 132,
-    "platform_or_product_promo": 16,
-    "weak_project_signal": 25,
-    "service_provider_promo": 5,
-    "employment_vacancy": 1
+    "no_project_signal": 147,
+    "platform_or_product_promo": 14,
+    "weak_project_signal": 24,
+    "education": 2
   },
   "hub_rejects": {
-    "no_project_signal": 18,
-    "weak_project_signal": 6,
-    "education": 1
+    "no_project_signal": 86,
+    "weak_project_signal": 25,
+    "education": 12,
+    "reference_site_mention": 1
   },
-  "accepted_classes": {},
-  "project_types": {},
-  "languages": {},
-  "started_at": "2026-11-13T16:43:33.604572+00:00",
-  "completed_at": "2026-11-13T16:44:32.896213+00:00",
+  "accepted_classes": {
+    "HOT PROJECT": 1
+  },
+  "project_types": {
+    "WEBSITE": 1
+  },
+  "languages": {
+    "EN": 1
+  },
+  "started_at": "2026-11-13T20:59:12.011067+00:00",
+  "completed_at": "2026-11-13T21:00:25.081094+00:00",
   "new_leads": 0,
   "alerts": 0
 }
