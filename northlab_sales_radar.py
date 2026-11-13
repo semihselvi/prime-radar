@@ -17,7 +17,7 @@ import requests
 import main as core
 import northlab_sales_source_hub as source_hub
 
-VERSION = "2.3-developer-showcase-guard"
+VERSION = "2.4-explicit-crm-briefs"
 COLLECTION = "northlab_sales_project_leads"
 SCAN_COLLECTION = "northlab_sales_project_scans"
 TELEGRAM_HOURS = int(os.getenv("NORTHLAB_TELEGRAM_HOURS", "24"))
@@ -512,6 +512,12 @@ def classify(text: str) -> tuple[dict[str, Any] | None, str]:
     business = bool(BUSINESS_RE.search(value))
     specific = bool(SPECIFICITY_RE.search(value))
 
+    # Narrow buyer briefs that describe deliverables without saying "hire".
+    explicit_crm_brief = bool(re.search(
+        r"\bi need\b.{0,85}\bn8n\b.{0,35}\bworkflows?\b.{0,280}\b(?:crm|hubspot|salesforce|zoho)\b|"
+        r"\bwhat i need from you\b.{0,110}\b(?:handle|implement|set up)\b.{0,100}\bintegration\b",
+        value, re.I,
+    )) and bool(set(types) & {"CRM", "AUTOMATION", "INTEGRATION"})
     if not types and not partner:
         return None, "no_project_signal"
 
@@ -520,7 +526,7 @@ def classify(text: str) -> tuple[dict[str, Any] | None, str]:
         lead_class = "PARTNER"
         score = 82 + (6 if specific else 0)
         reasons.append("explicit_partner_search")
-    elif demand and types and project_request:
+    elif types and ((demand and project_request) or explicit_crm_brief):
         high_value_types = {"INTEGRATION", "SOFTWARE", "MOBILE_APP", "BOOKING", "CRM", "AUTOMATION", "PAYMENT"}
         lead_class = "HOT PROJECT" if (specific or business or bool(high_value_types.intersection(types))) else "WARM PROJECT"
         score = 88 if lead_class == "HOT PROJECT" else 74
