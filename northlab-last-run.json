@@ -2,62 +2,51 @@
   "status": "success",
   "version": "2.3-developer-showcase-guard",
   "telegram_groups": 93,
-  "telegram_messages": 1056,
+  "telegram_messages": 995,
   "telegram_global_queries": 22,
   "telegram_global_messages": 231,
-  "web_raw": 217,
+  "web_raw": 230,
   "web_accepted": 0,
-  "hub_raw": 125,
-  "hub_accepted": 1,
+  "hub_raw": 25,
+  "hub_accepted": 0,
   "hub_source_counts": {
     "reddit": 25,
     "bluesky": 0,
-    "youtube": 100,
+    "youtube": 0,
     "forums": 0
   },
-  "hub_youtube_urls": 1,
+  "hub_youtube_urls": 0,
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 572,
-    "marketplace_ad": 59,
-    "weak_project_signal": 13,
-    "duplicate_text": 260,
-    "service_provider_promo": 1,
-    "bot_author": 125,
-    "education": 25,
+    "no_project_signal": 546,
+    "marketplace_ad": 61,
+    "news_content": 7,
+    "weak_project_signal": 14,
     "employment_vacancy": 11,
-    "news_content": 13,
-    "job_seeker": 1,
+    "duplicate_text": 238,
+    "job_seeker": 3,
+    "bot_author": 113,
+    "service_provider_promo": 1,
+    "education": 25,
     "crypto_or_earnings_recruitment": 2
   },
   "web_rejects": {
-    "no_project_signal": 143,
-    "platform_or_product_promo": 13,
-    "weak_project_signal": 23,
-    "education": 1,
-    "service_provider_promo": 4,
-    "employment_vacancy": 1,
-    "marketplace_directory": 1
+    "no_project_signal": 153,
+    "weak_project_signal": 24,
+    "platform_or_product_promo": 15
   },
   "hub_rejects": {
-    "no_project_signal": 86,
-    "weak_project_signal": 24,
-    "education": 12,
-    "developer_showcase": 1,
-    "reference_site_mention": 1
+    "no_project_signal": 19,
+    "weak_project_signal": 4,
+    "education": 1,
+    "developer_showcase": 1
   },
-  "accepted_classes": {
-    "HOT PROJECT": 1
-  },
-  "project_types": {
-    "WEBSITE": 1
-  },
-  "languages": {
-    "EN": 1
-  },
-  "started_at": "2026-11-15T00:14:57.274079+00:00",
-  "completed_at": "2026-11-15T00:16:03.052757+00:00",
+  "accepted_classes": {},
+  "project_types": {},
+  "languages": {},
+  "started_at": "2026-11-15T09:54:24.728681+00:00",
+  "completed_at": "2026-11-15T09:55:26.403666+00:00",
   "new_leads": 0,
   "alerts": 0
 }
