@@ -1,14 +1,38 @@
 {
   "status": "completed",
-  "scanned_at": "2026-11-15T15:47:46.397337+00:00",
+  "scanned_at": "2026-11-15T21:11:33.510628+00:00",
   "groups": 122,
-  "messages": 20534,
-  "matches": 21,
+  "messages": 20561,
+  "matches": 24,
   "niche_studio": 3,
-  "one_bed": 18,
+  "one_bed": 21,
   "unlinked": 0,
   "errors": 0,
   "public_offers": [
+    {
+      "kind": "1+1",
+      "date": "2026-11-15T17:41:26+00:00",
+      "url": "https://t.me/severni_kipr_all/15794",
+      "price_mentions": []
+    },
+    {
+      "kind": "1+1",
+      "date": "2026-11-15T17:40:46+00:00",
+      "url": "https://t.me/severnyy_kipr_chat/183509",
+      "price_mentions": []
+    },
+    {
+      "kind": "1+1",
+      "date": "2026-11-15T17:37:40+00:00",
+      "url": "https://t.me/northern_cyprus_forum/345404",
+      "price_mentions": []
+    },
+    {
+      "kind": "1+1",
+      "date": "2026-11-15T17:36:03+00:00",
+      "url": "https://t.me/NorthCyprus_Island/185768",
+      "price_mentions": []
+    },
     {
       "kind": "1+1",
       "date": "2026-11-15T12:04:50+00:00",
@@ -135,12 +159,6 @@
       "kind": "1+1",
       "date": "2026-10-30T22:09:11+00:00",
       "url": "https://t.me/iskele_LongBeach/331670",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
-      "date": "2026-10-16T18:55:25+00:00",
-      "url": "https://t.me/severni_kipr_all/15572",
       "price_mentions": []
     }
   ],
