@@ -26,3 +26,10 @@ The selected model is an example free-tier-eligible Cloudflare model, not a univ
 **Security:** [ScrapeGraphAI SSRF issue #1115](https://github.com/ScrapeGraphAI/Scrapegraph-ai/issues/1115) remains relevant for any direct URL scraping. Never pass public or user-supplied URLs to its FetchNode. For more firms, first design a safe fetcher that enforces public-IP address connections across redirects and DNS changes, plus robots/rate limits and source-specific permission checks. The pilot's hardcoded owned domain must not be generalized by changing a CLI flag.
 
 **Commercial gate:** This is an extraction proof only. A successful JSON response is **not** a customer lead. Additional company discovery, contact channel validation, buyer signal and dedup are required before any sales outreach.
+
+## Validation correction (16 Nov 2026)
+- First Cloudflare live integration returned an empty set of company fields despite successful HTTP execution. This is **not** a successful information-extraction result.
+- The unsupported `format=json` model argument was removed.
+- Nested JSON response wrappers are unwrapped when structured.
+- Empty company/activity/services results now raise an error instead of creating a false-positive PASS.
+- No new company is automatically a qualified buyer.
