@@ -110,6 +110,21 @@ def config_from_env() -> dict:
 def normalize_result(raw: object, text: str) -> dict:
     if not isinstance(raw, dict):
         raise RuntimeError("ScrapeGraphAI did not return a JSON object")
+    # Inspect only keys/types; never print raw content, model text or API credentials.
+    print("SGA_SHAPE_ROOT:", sorted(str(k) for k in raw.keys())[:30], file=sys.stderr)
+    for wrapper in ("result", "data", "content", "answer", "output", "text"):
+        nested = raw.get(wrapper)
+        if isinstance(nested, str) and len(nested) < 50_000:
+            try:
+                nested = json.loads(nested)
+            except json.JSONDecodeError:
+                pass
+        if isinstance(nested, dict) and any(
+            k in nested for k in ("company_name", "business_activity", "products_services")
+        ):
+            raw = nested
+            print("SGA_SHAPE_UNWRAPPED:", wrapper, sorted(str(k) for k in raw.keys())[:30], file=sys.stderr)
+            break
     fields = ("company_name", "business_activity", "procurement_statement")
     result = {k: (raw.get(k) if isinstance(raw.get(k), str) else None) for k in fields}
     for field in ("products_services", "observed_website_features"):
@@ -125,6 +140,8 @@ def normalize_result(raw: object, text: str) -> dict:
                 and quote.strip() and quote.strip() in text):
             verified_gaps.append({"finding": finding[:300], "supporting_quote": quote[:400]})
     result["possible_digital_gaps"] = verified_gaps[:10]
+    if not (result["company_name"] or result["business_activity"] or result["products_services"]):
+        raise RuntimeError("AI output contains no usable company or service information")
     return {
         "status": "review_required",
         "source_url": SOURCE_URL,
