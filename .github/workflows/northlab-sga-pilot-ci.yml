@@ -1,0 +1,29 @@
+name: NORTHLAB - ScrapeGraphAI Pilot CI
+"on":
+  pull_request:
+    paths:
+      - "northlab_sga_pilot.py"
+      - "test_northlab_sga_pilot.py"
+      - "docs/NORTHLAB_SCRAPEGRAPHAI_PILOT.md"
+      - ".github/workflows/northlab-sga-pilot-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile and run offline tests
+        run: |
+          python -m py_compile northlab_sga_pilot.py
+          python -m unittest -v test_northlab_sga_pilot.py
+      - name: Verify dry run without model or key
+        run: |
+          python northlab_sga_pilot.py --url https://northlab.pro/ --allow-host northlab.pro
