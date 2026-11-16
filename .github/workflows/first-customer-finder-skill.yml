@@ -1,0 +1,36 @@
+name: First Customer Finder skill checks
+
+"on":
+  push:
+    paths:
+      - ".agents/skills/first-customer-finder/**"
+      - ".github/workflows/first-customer-finder-skill.yml"
+  pull_request:
+    paths:
+      - ".agents/skills/first-customer-finder/**"
+      - ".github/workflows/first-customer-finder-skill.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  offline-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile skill helpers
+        run: python -m compileall -q .agents/skills/first-customer-finder/scripts
+      - name: Run upstream offline regression suite
+        run: python -m unittest discover -s .agents/skills/first-customer-finder/tests -p 'test_workflow.py' -v
+      - name: Verify fictional demo report generation
+        run: |
+          python .agents/skills/first-customer-finder/scripts/generate_report.py \
+            .agents/skills/first-customer-finder/examples/demo.json \
+            "$RUNNER_TEMP/first-customer-finder-demo/report.md" \
+            --csv "$RUNNER_TEMP/first-customer-finder-demo/prospects.csv"
+          grep -q "FICTIONAL DEMO" "$RUNNER_TEMP/first-customer-finder-demo/report.md"
+          grep -q "No outreach sent" "$RUNNER_TEMP/first-customer-finder-demo/report.md"
