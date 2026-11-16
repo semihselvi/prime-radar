@@ -99,6 +99,23 @@ class PilotTests(unittest.TestCase):
         self.assertEqual(out["result"]["company_name"], "Example")
         self.assertFalse(out["qualified_sales_lead"])
 
+    def test_nested_extraction_fields_are_unwrapped(self):
+        got = s.normalize_result({
+            "result": {"company_name": "NorthLab", "business_activity": "Software development"}
+        }, "NorthLab offers custom software")
+        self.assertEqual(got["result"]["company_name"], "NorthLab")
+
+    def test_empty_extraction_is_a_failure(self):
+        with self.assertRaisesRegex(RuntimeError, "no usable"):
+            s.normalize_result({"company_name": None, "products_services": []}, "NorthLab")
+
+    def test_unsupported_openai_format_is_not_forwarded(self):
+        with patch.dict(os.environ, {
+            "CLOUDFLARE_ACCOUNT_ID": "a" * 32,
+            "CLOUDFLARE_API_TOKEN": "t" * 24,
+        }, clear=True):
+            self.assertNotIn("format", s.config_from_env()["llm"])
+
 
 if __name__ == "__main__":
     unittest.main()
