@@ -1,0 +1,70 @@
+name: NORTHLAB - V3 Independent Shadow Radar
+
+"on":
+  pull_request:
+    paths:
+      - "northlab_v3/**"
+      - "tests/test_radar_v3.py"
+      - "docs/NORTHLAB_V3_ARCHITECTURE.md"
+      - ".github/workflows/northlab-v3-shadow.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: northlab-v3-shadow-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  architecture-and-contract-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile independent package and run acceptance tests
+        run: |
+          python -m compileall -q northlab_v3
+          python -m unittest discover -s tests -p 'test_radar_v3.py' -v
+      - name: Assert no import dependency on legacy radar
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = ''.join(f.read_text(encoding='utf-8') for f in Path('northlab_v3').glob('*.py'))
+          forbidden = ('import northlab_sales_radar', 'import main as core', 'import firebase_admin', 'import telethon', 'import scrapegraphai')
+          assert not any(v in p for v in forbidden), 'Legacy/push dependency detected'
+          PY
+
+  live-public-discovery-shadow:
+    needs: architecture-and-contract-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Discover public KKTC/TR buyer request signals, no alerts
+        run: python -m northlab_v3 discover --out northlab-v3-shadow.json
+      - name: Validate truthful no-outreach result
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('northlab-v3-shadow.json',encoding='utf-8'))
+          assert d['qualified_lead_count'] == 0
+          assert d['contacts_sent'] == 0
+          assert d['market_scope'] == ['KKTC','TR']
+          assert all(c['status'] == 'REVIEW_REQUIRED' and c['sales_outreach_allowed'] is False for c in d['review_queue'])
+          print('SEARCH_FEEDS',d['successful_search_feeds'],'RAW',d['raw_results'],'REVIEW_REQUIRED',d['review_queue_count'])
+          PY
+      - name: Upload public discovery review queue and metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: northlab-v3-shadow-review
+          path: northlab-v3-shadow.json
+          if-no-files-found: ignore
+          retention-days: 2
