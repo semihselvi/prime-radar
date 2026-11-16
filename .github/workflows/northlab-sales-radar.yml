@@ -10,6 +10,7 @@ concurrency:
 "on":
   workflow_dispatch:
   push:
+    branches: ["main"]
     paths:
       - "northlab_sales_radar.py"
       - "northlab_sales_source_hub.py"
