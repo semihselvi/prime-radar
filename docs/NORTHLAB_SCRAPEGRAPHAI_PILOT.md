@@ -1,53 +1,28 @@
-# NorthLab — ScrapeGraphAI local pilot
+# NorthLab — ScrapeGraphAI + Cloudflare Workers AI on GitHub (pilot)
 
-**Scope:** Manual enrichment of explicitly approved public company pages. This pilot is **not** a lead-finder, sales classifier, or production crawler. It does not touch Firestore, EKSİQ, Telegram, or the production NorthLab Radar.
+**No Windows, no Ollama, no new hosting.** GitHub Actions runs Python. Cloudflare Workers AI supplies an OpenAI-compatible model API. This is a single-page, manually approved experiment, **not** a production lead radar.
 
-## What it actually does
+## What is ready
+- Code and mocked API/offline tests; dry-run has **zero network/model calls**.
+- On `--run`, uses only the hardcoded owned `https://northlab.pro/` URL. Redirects rejected and HTML response capped at 180 KB.
+- Extracts visible page text before passing it to ScrapeGraphAI. The library receives **local text**, never a remote URL, avoiding its known SSRF FetchNode path.
+- ScrapeGraphAI calls Cloudflare's OpenAI-compatible endpoint with free-tier-eligible `@cf/zai-org/glm-4.7-flash`. No SGA managed API.
+- Results marked `review_required` with `qualified_sales_lead=false`. Invented supporting quotes are removed; other fields still require human verification.
+- No Firestore, EKSİQ, Telegram, CRM write, automated outreach or recurring schedule.
 
-1. The operator supplies an HTTPS URL and its **exact** hostname as a manual allowlist.
-2. The script checks the input against simple local-target filters and requires an explicit `--run` flag.
-3. If run is enabled, the official `SmartScraperGraph` parses the page using the **locally installed Ollama Llama 3.2 model**, not the paid ScrapeGraphAI API.
-4. It emits JSON with company description, public services and *possibly* relevant gaps, **always flagged for human review**. It never invents eligibility or automatic intent scores.
+## One-time setup for a real model test
+1. Cloudflare dashboard > Workers AI > Use REST API. Create a scoped Workers AI token (official guide recommends the Workers AI API Token template).
+2. In GitHub `semihselvi/prime-radar` > Settings > Secrets and variables > Actions, configure **repository secrets**:
+   - `CLOUDFLARE_ACCOUNT_ID`: 32-digit hex account ID
+   - `CLOUDFLARE_API_TOKEN`: scoped Workers AI token
+3. After PR review and merge to `main`, GitHub > Actions > **NORTHLAB - ScrapeGraphAI Pilot CI** > Run workflow > set **run_live=true**. Default is **false**, so no accidental AI bill/usage.
+4. Confirm one `review_required` JSON artifact exists. If unavailable, the job must fail without guessing the answer. Do not publish raw company text or token.
 
-**Security limitation:** ScrapeGraphAI has an [open SSRF issue](https://github.com/ScrapeGraphAI/Scrapegraph-ai/issues/1115). Start-URL allowlisting alone does **not** protect against redirect-to-private-IP or DNS-rebinding attacks. Run this **only on an isolated operator workstation or network sandbox** with outbound access to private networks and cloud metadata endpoints blocked. Do not expose this script as a web endpoint or run it against untrusted URLs. Respect website terms, robots rules and rate limits; do not circumvent login, paywalls or anti-bot controls.
+## Scope and limitations
+Cloudflare Workers Free has **10,000 Neurons/day**, shared by all Workers AI usage; daily usage is **not** guaranteed. On Workers Paid, usage beyond the free allocation can be charged. Pilot uses one model inference and must be opt-in. No live call was possible during PR authoring without configured account token.
 
-## Windows local setup (optional; only when operator is ready)
+The selected model is an example free-tier-eligible Cloudflare model, not a universal compatibility guarantee. ScrapeGraphAI's OpenAI custom base URL path requires a real integration run to validate. The workflow installs ScrapeGraphAI only for an explicit live test.
 
-```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install scrapegraphai
-python -m playwright install chromium
-# Install Ollama separately from https://ollama.com/download and start it locally
-ollama pull llama3.2
-```
+**Security:** [ScrapeGraphAI SSRF issue #1115](https://github.com/ScrapeGraphAI/Scrapegraph-ai/issues/1115) remains relevant for any direct URL scraping. Never pass public or user-supplied URLs to its FetchNode. For more firms, first design a safe fetcher that enforces public-IP address connections across redirects and DNS changes, plus robots/rate limits and source-specific permission checks. The pilot's hardcoded owned domain must not be generalized by changing a CLI flag.
 
-### Free dry-run — no model or web request
-
-```powershell
-python northlab_sga_pilot.py --url https://northlab.pro/ --allow-host northlab.pro
-```
-
-### Real extraction — one approved company page, local model required
-
-```powershell
-python northlab_sga_pilot.py --url https://northlab.pro/ --allow-host northlab.pro --run
-```
-
-`northlab.pro` here is only a safe **owned-site smoke-test example**, **not a NorthLab sales prospect**. Real company prospects require an independently collected, source-backed shortlist and permission-compliant use.
-
-### Tests
-
-```powershell
-python -m unittest -v test_northlab_sga_pilot.py
-```
-
-## Acceptance gate
-
-- Must run with no paid ScrapeGraphAI account/API key.
-- A manual public-source example must produce structured output without false purchasing intent.
-- Every finding must be checked against the original source with a real quotation and dated link; the script itself marks the evidence as unverified.
-- No automatic candidate alert, CRM import, or contact research until separate validation and review.
-- Record local CPU/RAM use, extraction runtime and failure rate before extending beyond one-page pilot.
-
-**Current status (16 Nov 2026):** 11 local unit tests PASS, dry-run works. **Not yet tested with a live ScrapeGraphAI/Ollama installation.** No evidence of leads generated.
+**Commercial gate:** This is an extraction proof only. A successful JSON response is **not** a customer lead. Additional company discovery, contact channel validation, buyer signal and dedup are required before any sales outreach.
