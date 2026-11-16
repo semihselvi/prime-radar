@@ -1,65 +1,104 @@
+import os
 import unittest
 from unittest.mock import patch
-from northlab_sga_pilot import validate_url, normalize_result, run, main
+import northlab_sga_pilot as s
 
 
-class ScrapeGraphPilotTests(unittest.TestCase):
-    def test_exact_allowlist_accepts_public_https(self):
-        url = 'https://www.northlab.pro/contact/'
-        self.assertEqual(validate_url(url, 'www.northlab.pro'), url)
+class FakeGraph:
+    last = None
 
-    def test_rejects_unapproved_subdomain(self):
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        FakeGraph.last = self
+
+    def run(self):
+        return {
+            "company_name": "NorthLab",
+            "possible_digital_gaps": [
+                {"finding": "Missing feature", "supporting_quote": "NorthLab offers custom software"},
+                {"finding": "Hallucination", "supporting_quote": "Not in source"},
+            ],
+            "procurement_statement": "No verified purchase request",
+        }
+
+
+class PilotTests(unittest.TestCase):
+    def test_static_owned_url(self):
+        self.assertEqual(s.SOURCE_URL, "https://northlab.pro/")
+
+    def test_dry_run_no_network_or_secrets(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with patch.object(s, "fetch_owned_source", side_effect=AssertionError("fetched")):
+                self.assertEqual(s.run()["status"], "dry_run")
+
+    def test_fail_closed_without_secrets_before_fetch(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with patch.object(s, "fetch_owned_source", side_effect=AssertionError("fetched")):
+                with self.assertRaisesRegex(RuntimeError, "ACCOUNT_ID"):
+                    s.run(execute=True)
+
+    def test_account_id_validation(self):
+        with patch.dict(os.environ, {"CLOUDFLARE_ACCOUNT_ID": "a" * 32,
+                                     "CLOUDFLARE_API_TOKEN": "t" * 24}, clear=True):
+            cfg = s.config_from_env()
+            self.assertIn("/accounts/" + "a" * 32 + "/ai/v1", cfg["llm"]["base_url"])
+            self.assertEqual(cfg["llm"]["model"], "openai/" + s.MODEL)
+
+    def test_cloudflare_token_not_printed_by_result(self):
+        with patch.dict(os.environ, {"CLOUDFLARE_ACCOUNT_ID": "a" * 32,
+                                     "CLOUDFLARE_API_TOKEN": "s" * 24}, clear=True):
+            got = s.run(execute=True,
+                        fetcher=lambda: "WEBPAGE TEXT: NorthLab offers custom software to businesses.",
+                        graph_class=FakeGraph)
+        self.assertNotIn("s" * 24, str(got))
+        self.assertFalse(got["qualified_sales_lead"])
+        self.assertFalse(got["automatic_outreach_allowed"])
+
+    def test_source_passed_as_local_text_not_url(self):
+        with patch.dict(os.environ, {"CLOUDFLARE_ACCOUNT_ID": "a" * 32,
+                                     "CLOUDFLARE_API_TOKEN": "s" * 24}, clear=True):
+            s.run(execute=True,
+                  fetcher=lambda: "WEBPAGE TEXT: NorthLab offers custom software to businesses.",
+                  graph_class=FakeGraph)
+        self.assertFalse(FakeGraph.last.kwargs["source"].startswith("http"))
+
+    def test_fabricated_quote_is_dropped(self):
+        out = s.normalize_result(FakeGraph().run(), "NorthLab offers custom software")
+        self.assertEqual(len(out["result"]["possible_digital_gaps"]), 1)
+        self.assertFalse(out["evidence_verified_against_source"])
+
+    def test_malformed_model_result_rejected(self):
+        with self.assertRaises(RuntimeError):
+            s.normalize_result("invalid", "some source")
+
+    def test_remove_script_from_visible_text(self):
+        got = s.clean_html("<html><body><h1>NorthLab offers custom software to businesses.</h1>"
+                           "<script>leak credentials</script><p>We build CRM and websites for firms.</p>"
+                           "</body></html>")
+        self.assertNotIn("leak credentials", got)
+        self.assertIn("NorthLab", got)
+
+    def test_tiny_html_rejected(self):
         with self.assertRaises(ValueError):
-            validate_url('https://evil.northlab.pro/', 'northlab.pro')
+            s.clean_html("<html><body>short</body></html>")
 
-    def test_rejects_local_and_ip_hosts(self):
-        for host in ('localhost', '127.0.0.1', '169.254.169.254', '[::1]'):
-            with self.subTest(host=host), self.assertRaises(ValueError):
-                validate_url('https://' + host + '/', host)
+    def test_one_page_cap(self):
+        self.assertLessEqual(s.MAX_HTML_BYTES, 200_000)
+        self.assertLessEqual(s.MAX_SOURCE_CHARS, 16_000)
 
-    def test_rejects_non_https_and_credentials(self):
-        for url in ('http://northlab.pro/', 'https://me:pass@northlab.pro/',
-                    'https://northlab.pro:443/', 'https://northlab.pro/?q=a'):
-            with self.subTest(url=url), self.assertRaises(ValueError):
-                validate_url(url, 'northlab.pro')
+    def test_no_web_or_model_in_default_cli(self):
+        with patch.object(s, "fetch_owned_source", side_effect=AssertionError("network")):
+            with patch("builtins.print"):
+                self.assertEqual(s.main([]), 0)
 
-    def test_dry_run_never_calls_model_or_imports_library(self):
-        with patch('northlab_sga_pilot.ollama_model_ready', side_effect=AssertionError('called')):
-            got = run('https://northlab.pro/', 'northlab.pro', 'llama3.2')
-        self.assertEqual(got['stage'], 'dry_run')
-        self.assertFalse(got['qualified_sales_lead'])
-
-    def test_fail_closed_when_local_model_is_missing(self):
-        with patch('northlab_sga_pilot.ollama_model_ready', return_value=False):
-            with self.assertRaisesRegex(RuntimeError, 'not installed'):
-                run('https://northlab.pro/', 'northlab.pro', 'llama3.2', True)
-
-    def test_does_not_upgrade_model_claim_to_real_lead(self):
-        got = normalize_result({'company_name': 'Example',
-                                'possible_digital_gaps': [{'finding': 'No booking system', 'supporting_quote': 'Call us'}],
-                                'procurement_statement': 'We need a CRM'}, 'https://northlab.pro/')
-        self.assertFalse(got['qualified_sales_lead'])
-        self.assertFalse(got['evidence_verified_against_source'])
-        self.assertTrue(got['review_required'])
-
-    def test_requires_supporting_quote_for_gap(self):
-        got = normalize_result({'possible_digital_gaps': [
-            {'finding': 'No shop', 'supporting_quote': ''}, {'finding': 'No CRM'},
-            {'finding': 'Contact only', 'supporting_quote': 'Call us'}]}, 'https://northlab.pro/')
-        self.assertEqual(len(got['result']['possible_digital_gaps']), 1)
-
-    def test_bad_output_fails_closed(self):
-        with self.assertRaises(ValueError):
-            normalize_result(['text'], 'https://northlab.pro/')
-
-    def test_invalid_model_rejected(self):
-        with self.assertRaises(ValueError):
-            run('https://northlab.pro/', 'northlab.pro', 'openai/gpt-4o', True)
-
-    def test_manual_cli_dry_run(self):
-        with patch('builtins.print'):
-            self.assertEqual(main(['--url', 'https://northlab.pro/', '--allow-host', 'northlab.pro']), 0)
+    def test_graph_returns_verifiable_but_unqualified_data(self):
+        out = s.normalize_result({"company_name": "Example",
+                                  "possible_digital_gaps": [
+                                      {"finding": "Booking issue", "supporting_quote": "Contact us today"}]},
+                                 "Visible text Contact us today")
+        self.assertEqual(out["result"]["company_name"], "Example")
+        self.assertFalse(out["qualified_sales_lead"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
