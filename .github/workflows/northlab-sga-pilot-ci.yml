@@ -34,6 +34,15 @@ jobs:
       - name: Verify dry-run without model or credentials
         run: |
           python northlab_sga_pilot.py
+      - name: Fetch owned public page once (no AI, no secrets)
+        run: |
+          python - <<'PY'
+          import northlab_sga_pilot as p
+          source=p.fetch_owned_source()
+          assert source.startswith("WEBPAGE TEXT")
+          assert len(source) > 80
+          print("Owned-page text retrieved, characters:", len(source))
+          PY
 
   live-owned-page:
     if: github.event_name == 'workflow_dispatch' && inputs.run_live == true
