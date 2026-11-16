@@ -27,7 +27,7 @@ Relevant buyer functions may include owner/founder, CEO/COO, Head of IT, CTO, op
 
 Adjacent ICP: a company with a concrete public operational pain or recent business trigger that plausibly requires one of the approved NorthLab services. Keep this outside the high-intent shortlist unless the evidence supports an active project.
 
-Industry is not preselected. Test verticals only when a public signal shows a specific need; do not fill lists with generic businesses just because they have a weak website.
+NorthLab's published service focus on northlab.pro is rent-a-car, transfer, real estate, tourism, and service businesses. Treat these as preferred verticals, not proof of demand: prioritize a company only when a public signal shows a specific need. Other verticals may be tested when evidence is stronger. Do not fill lists with generic businesses just because they have a weak website.
 
 ## Commercial constraints
 
