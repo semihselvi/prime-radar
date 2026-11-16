@@ -16,6 +16,7 @@ import requests
 
 import main as core
 import northlab_sales_source_hub as source_hub
+from northlab_procurement_signals import classify_official_procurement
 
 VERSION = "2.4-content-and-promo-guard"
 COLLECTION = "northlab_sales_project_leads"
@@ -415,6 +416,8 @@ PROJECT_REQUEST_RE = re.compile(
 )
 
 WEB_QUERIES = [
+    'site:kksrsb.org/hakkimizda/duyurular "yazılım" "ihalesi"',
+    'site:ungm.org/Public/Notice/ "web" "request for proposal"',
     '"looking for web developer" project',
     '"need a website" business',
     '"website redesign" "looking for" developer',
@@ -820,10 +823,14 @@ def scan_web(db_client, now: datetime, debug: dict[str, Any]) -> list[dict[str, 
             if host in KNOWN_PLATFORM_HOSTS or PLATFORM_PROMO_RE.search(blob):
                 debug["web_rejects"]["platform_or_product_promo"] += 1
                 continue
-            signal, reason = classify(blob)
+            # Official procurement notices have a separate review-only gate.
+            # Search snippets do not establish deadline validity or bidder eligibility.
+            signal = classify_official_procurement(blob, str(row.get("url") or ""))
             if signal is None:
-                debug["web_rejects"][reason] += 1
-                continue
+                signal, reason = classify(blob)
+                if signal is None:
+                    debug["web_rejects"][reason] += 1
+                    continue
             lead = {**row, **signal, "radar_version": VERSION}
             debug["web_accepted"] += 1
             debug["accepted_classes"][signal["lead_class"]] += 1
