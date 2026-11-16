@@ -49,8 +49,8 @@ jobs:
       - name: Verify Northlab radar
         id: verify
         run: |
-          python -m py_compile northlab_sales_radar.py northlab_sales_source_hub.py test_northlab_sales_radar.py
-          python -m unittest -q test_northlab_sales_radar.py
+          python -m py_compile northlab_sales_radar.py northlab_sales_source_hub.py northlab_procurement_signals.py test_northlab_sales_radar.py test_northlab_procurement_signals.py
+          python -m unittest -q test_northlab_sales_radar.py test_northlab_procurement_signals.py
 
       - name: Restore dedicated Northlab Telegram session
         id: session
@@ -91,7 +91,7 @@ jobs:
           NORTHLAB_TELEGRAM_HOURS: "24"
           NORTHLAB_PER_GROUP_LIMIT: "100"
           NORTHLAB_MAX_ALERTS: "12"
-          NORTHLAB_WEB_QUERY_LIMIT: "24"
+          NORTHLAB_WEB_QUERY_LIMIT: "26"
           NORTHLAB_GLOBAL_RESULTS_PER_QUERY: "60"
           NORTHLAB_GLOBAL_TELEGRAM_DAYS: "14"
           NORTHLAB_SOURCE_HUB_LOOKBACK_DAYS: "14"
