@@ -99,7 +99,6 @@ def config_from_env() -> dict:
             "api_key": token,
             "base_url": f"https://api.cloudflare.com/client/v4/accounts/{account}/ai/v1",
             "model_tokens": 8192,
-            "format": "json",
             "temperature": 0,
         },
         "verbose": False,
