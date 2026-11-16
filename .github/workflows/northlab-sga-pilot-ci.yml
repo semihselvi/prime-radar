@@ -12,6 +12,7 @@ name: NORTHLAB - ScrapeGraphAI Pilot CI
       - "test/northlab-sga-live-once-20261116"
     paths:
       - ".github/workflows/northlab-sga-pilot-ci.yml"
+      - "northlab_sga_pilot.py"
   workflow_dispatch:
     inputs:
       run_live:
