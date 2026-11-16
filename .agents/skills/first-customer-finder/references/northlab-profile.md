@@ -11,17 +11,21 @@ NorthLab (northlab.pro) is a software and technology services business. The curr
 - Software maintenance and technical support
 - IT consulting
 
-Do not claim a capability, certification, customer result, case study, integration, or delivery capacity unless it is evidenced on northlab.pro or supplied by Semih.
+Do not claim a capability, certification, customer result, case study, integration, or delivery capacity unless it is evidenced on northlab.pro or supplied by the owner.
 
-## Target markets
+## Target markets — owner-confirmed, 16 November 2026
 
-**Primary acquisition markets: Japan and Egypt.**
+**Primary acquisition markets: Türkiye, Northern Cyprus (KKTC), Russia, Kazakhstan, and Kyrgyzstan.**
 
-Do not spend prospecting effort on Cyprus or Türkiye unless Semih explicitly changes this instruction. Do not assume Japan/Egypt are interchangeable: separate the country, language, legal context, sources, and outreach approach in each report.
+This is the complete current primary-market set, not an asserted ranking between the five countries. Research and reporting must explicitly cover the specified market(s), and must not silently substitute other countries.
+
+**Japan and Egypt are NOT primary acquisition markets.** Do not allocate active prospecting or reporting effort to Japan or Egypt unless the owner expressly requests a new market scope. Earlier Japan/Egypt instructions are superseded by this section.
+
+For Türkiye and KKTC, search Turkish-language public business/project sources. For Russia, Kazakhstan, and Kyrgyzstan, search Russian-language sources and relevant local-language public sources where feasible; use only language capabilities actually available for outreach. Keep country-specific legal, language, procurement, and contact context separate. Never equate a company operating in one market with evidence of demand in another.
 
 ## Ideal customer evidence
 
-Primary ICP: a company or organization in Japan or Egypt with a public, attributable, current signal that it is seeking an external software-development partner, replacing or integrating business systems, automating a specific workflow, or commissioning a custom digital platform.
+Primary ICP: a company or organization in one of the five primary markets with a public, attributable, current signal that it is seeking an external software-development partner, replacing or integrating business systems, automating a specific workflow, or commissioning a custom digital platform.
 
 Relevant buyer functions may include owner/founder, CEO/COO, Head of IT, CTO, operations lead, procurement, or project owner. Mark the role as observed or inferred; never invent a named decision-maker.
 
@@ -37,6 +41,8 @@ NorthLab's published service focus on northlab.pro is rent-a-car, transfer, real
 - No private groups, login-wall bypass, guessed personal emails, phone enrichment, or mass scraping.
 - Do not send messages, submit forms, or create CRM records automatically. Prepare a concise, evidence-based draft and a verified official/public contact route for manual review.
 - A public signal is not proof of budget, buying authority, or an open project. Distinguish potential prospect, reachable contact, confirmed active requirement, proposal, and won/paid work.
+- Do not count software agencies seeking subcontractors as confirmed end customers; label partner/subcontract opportunities separately.
+- If no verifiable active buying signals are found, report zero rather than filling the list with generic businesses.
 
 ## Required report
 
