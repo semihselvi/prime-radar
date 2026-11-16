@@ -17,7 +17,7 @@ import requests
 import main as core
 import northlab_sales_source_hub as source_hub
 
-VERSION = "2.3-developer-showcase-guard"
+VERSION = "2.4-content-and-promo-guard"
 COLLECTION = "northlab_sales_project_leads"
 SCAN_COLLECTION = "northlab_sales_project_scans"
 TELEGRAM_HOURS = int(os.getenv("NORTHLAB_TELEGRAM_HOURS", "24"))
@@ -222,6 +222,12 @@ RECRUITMENT_PARTNER_RE = re.compile(
 
 SERVICE_PROVIDER_PROMO_RE = re.compile(
     r"(?:"
+    r"\bi\s+build\s+yours\s+first\b|"
+    r"\bi['’]?ll\s+handle\s+all\s+the\s+techy\s+bits\b|"
+    r"\bneed\s+all\s+of\s+it\?\s*just\s+dm\s+me\b|"
+    r"\bwhat\s+we\s+offer\b.{0,180}\b(?:website|wordpress|branding|design)\b|"
+    r"\bwe\s+turn\s+your\s+ideas\s+into\s+professional\s+designs\b|"
+    r"\bcheck\s+the\s+link\s+in\s+my\s+bio\b.{0,120}\blet['’]?s\s+build\b|"
     r"\bi['’]?m\s+(?:a\s+)?web\s+developer\b|"
     r"\bweb\s*&?\s*wordpress\s+developer\b|"
     r"\bhere['’]?s\s+what\s+i\s+can\s+help\s+you\s+with\b|"
@@ -299,8 +305,21 @@ REFERENCE_SITE_MENTION_RE = re.compile(
     re.I | re.S,
 )
 
+CONTENT_ARTICLE_RE = re.compile(
+    r"(?:"
+    r"\bthis\s+guide\s+gives\b|"
+    r"\bdo\s+i\s+need\s+a\s+website\s+for\s+my\s+business\b|"
+    r"\b2026\s+answer\b|"
+    r"\bthis\s+(?:article|guide|post)\s+(?:explains|covers|shows|gives)\b"
+    r")",
+    re.I | re.S,
+)
+
 DEVELOPER_SHOWCASE_RE = re.compile(
     r"(?:"
+    r"\bshowoff\s+saturday\b|"
+    r"\bi\s+built\s+a\s+tool\s+that\b|"
+    r"\bi\s+built\s+it\s*,?\s+so\s+take\s+this\s+as\s+a\s+showoff\s+post\b|"
     r"\bi\s+(?:coded|built|developed|created)\s+(?:a|this|the)\s+(?:site|website|web\s*site|app)\b|"
     r"\bthat\s+website\s+is\s+still\s+being\s+actively\s+developed\b|"
     r"\bi\s+haven['’]?t\s+used\s+any\s+ai[-\s]?generated\s+code\b|"
@@ -483,6 +502,8 @@ def classify(text: str) -> tuple[dict[str, Any] | None, str]:
         return None, "service_provider_promo"
     if DEVELOPER_SHOWCASE_RE.search(value):
         return None, "developer_showcase"
+    if CONTENT_ARTICLE_RE.search(value):
+        return None, "content_article"
     if REFERENCE_SITE_MENTION_RE.search(value):
         return None, "reference_site_mention"
     if EXISTING_JOB_HELP_RE.search(value):
