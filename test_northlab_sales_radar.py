@@ -227,6 +227,41 @@ class NorthlabSalesRadarTests(unittest.TestCase):
         self.assertIsNone(lead)
         self.assertEqual(reason, "developer_showcase")
 
+    def test_business_website_article_is_not_project(self):
+        lead, reason = radar.classify(
+            "Do I need a website for my business, really, in 2026? This guide gives an honest answer, including the cases where you can manage without one."
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "content_article")
+
+    def test_instagram_web_service_promo_is_not_project(self):
+        lead, reason = radar.classify(
+            "Need a website but can't face the faff? I build yours first, so you see it before you pay. I'll handle all the techy bits. Just DM me."
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "service_provider_promo")
+
+    def test_web_n_works_service_promo_is_not_project(self):
+        lead, reason = radar.classify(
+            "Welcome to Web N Works. We turn your ideas into professional designs. What We Offer: Modern WordPress Website Design, Graphic Design and CV Design."
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "service_provider_promo")
+
+    def test_showoff_tool_post_is_not_project(self):
+        lead, reason = radar.classify(
+            "Showoff Saturday: I built a tool that finds local businesses with no real website. I built it, so take this as a showoff post."
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "developer_showcase")
+
+    def test_link_in_bio_web_service_promo_is_not_project(self):
+        lead, reason = radar.classify(
+            "Need a website for your business? Check the link in my bio and let's build something great!"
+        )
+        self.assertIsNone(lead)
+        self.assertEqual(reason, "service_provider_promo")
+
 
 if __name__ == "__main__":
     unittest.main()
