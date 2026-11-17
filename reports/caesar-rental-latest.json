@@ -1,14 +1,22 @@
 {
   "status": "completed",
-  "scanned_at": "2026-11-17T04:37:44.225644+00:00",
+  "scanned_at": "2026-11-17T16:05:48.017540+00:00",
   "groups": 122,
-  "messages": 20658,
-  "matches": 29,
-  "niche_studio": 4,
-  "one_bed": 25,
+  "messages": 20739,
+  "matches": 24,
+  "niche_studio": 3,
+  "one_bed": 21,
   "unlinked": 0,
   "errors": 0,
   "public_offers": [
+    {
+      "kind": "1+1",
+      "date": "2026-11-17T06:08:52+00:00",
+      "url": "https://t.me/northern_cyprus_forum/345563",
+      "price_mentions": [
+        "€ 1 "
+      ]
+    },
     {
       "kind": "niche_studio",
       "date": "2026-11-16T13:02:59+00:00",
@@ -111,12 +119,6 @@
     },
     {
       "kind": "1+1",
-      "date": "2026-11-14T07:03:05+00:00",
-      "url": "https://t.me/cyprusprop/984157",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
       "date": "2026-11-13T15:53:33+00:00",
       "url": "https://t.me/NorthCyprus_Island/185461",
       "price_mentions": [
@@ -125,36 +127,8 @@
     },
     {
       "kind": "1+1",
-      "date": "2026-11-13T15:53:20+00:00",
-      "url": "https://t.me/northern_cyprus_forum/345150",
-      "price_mentions": [
-        "€ 1 "
-      ]
-    },
-    {
-      "kind": "1+1",
-      "date": "2026-11-13T15:50:54+00:00",
-      "url": "https://t.me/cyprusprop/984070",
-      "price_mentions": [
-        "€ 1 "
-      ]
-    },
-    {
-      "kind": "1+1",
-      "date": "2026-11-13T14:04:24+00:00",
-      "url": "https://t.me/cyprusprop/984065",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
       "date": "2026-11-13T11:34:13+00:00",
       "url": "https://t.me/severnyy_kipr_chat/183408",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
-      "date": "2026-11-13T07:01:06+00:00",
-      "url": "https://t.me/NorthCyprus_Island/185349",
       "price_mentions": []
     },
     {
@@ -173,12 +147,6 @@
       "kind": "1+1",
       "date": "2026-11-11T10:29:39+00:00",
       "url": "https://t.me/severnyy_kipr_chat/183215",
-      "price_mentions": []
-    },
-    {
-      "kind": "niche_studio",
-      "date": "2026-11-02T14:42:16+00:00",
-      "url": "https://t.me/cyprusy/1288063",
       "price_mentions": []
     },
     {
