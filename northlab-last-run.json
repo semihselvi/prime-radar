@@ -2,15 +2,15 @@
   "status": "success",
   "version": "2.4-content-and-promo-guard",
   "telegram_groups": 93,
-  "telegram_messages": 1181,
+  "telegram_messages": 1190,
   "telegram_global_queries": 22,
   "telegram_global_messages": 232,
   "web_raw": 218,
-  "web_accepted": 0,
-  "hub_raw": 25,
+  "web_accepted": 2,
+  "hub_raw": 0,
   "hub_accepted": 0,
   "hub_source_counts": {
-    "reddit": 25,
+    "reddit": 0,
     "bluesky": 0,
     "youtube": 0,
     "forums": 0
@@ -19,35 +19,36 @@
   "hub_forum_urls": 0,
   "errors": [],
   "rejects": {
-    "no_project_signal": 688,
-    "marketplace_ad": 70,
+    "no_project_signal": 710,
+    "duplicate_text": 230,
+    "marketplace_ad": 62,
+    "bot_author": 151,
     "education": 30,
-    "employment_vacancy": 3,
-    "document_portal_context": 1,
-    "portal_account_support": 1,
-    "duplicate_text": 248,
-    "job_seeker": 5,
-    "bot_author": 137,
-    "weak_project_signal": 11,
-    "news_content": 13
+    "crypto_or_earnings_recruitment": 1,
+    "employment_vacancy": 4,
+    "weak_project_signal": 8,
+    "job_seeker": 7,
+    "news_content": 12
   },
   "web_rejects": {
-    "no_project_signal": 139,
-    "weak_project_signal": 30,
-    "platform_or_product_promo": 10
-  },
-  "hub_rejects": {
-    "weak_project_signal": 7,
-    "no_project_signal": 11,
+    "no_project_signal": 132,
+    "platform_or_product_promo": 17,
+    "weak_project_signal": 26,
     "service_provider_promo": 1,
-    "developer_showcase": 5,
-    "education": 1
+    "employment_vacancy": 1
   },
-  "accepted_classes": {},
-  "project_types": {},
-  "languages": {},
-  "started_at": "2026-11-17T11:08:06.990327+00:00",
-  "completed_at": "2026-11-17T11:09:10.008070+00:00",
-  "new_leads": 0,
-  "alerts": 0
+  "hub_rejects": {},
+  "accepted_classes": {
+    "WARM PROJECT": 2
+  },
+  "project_types": {
+    "WEBSITE": 2
+  },
+  "languages": {
+    "EN": 2
+  },
+  "started_at": "2026-11-17T17:53:08.126315+00:00",
+  "completed_at": "2026-11-17T17:54:15.896296+00:00",
+  "new_leads": 2,
+  "alerts": 2
 }
