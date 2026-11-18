@@ -1,6 +1,10 @@
+import os
 import unittest
+from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch
 
 import northlab_sales_radar as radar
+import northlab_sales_source_hub as source_hub
 
 
 class NorthlabSalesRadarTests(unittest.TestCase):
@@ -261,6 +265,88 @@ class NorthlabSalesRadarTests(unittest.TestCase):
         )
         self.assertIsNone(lead)
         self.assertEqual(reason, "service_provider_promo")
+
+
+class NorthlabDeliveryRegressionTests(unittest.TestCase):
+    def setUp(self):
+        self.now = datetime(2026, 11, 18, tzinfo=timezone.utc)
+        self.lead = {
+            "lead_id": "known-test-lead",
+            "lead_class": "HOT PROJECT",
+            "platform": "Web",
+            "text": "We need a CRM integration for our business.",
+            "url": "https://example.org/request",
+        }
+
+    def test_telegram_requires_positive_api_acknowledgement(self):
+        response = MagicMock()
+        response.json.return_value = {"ok": True}
+        with patch.dict(os.environ, {"TELEGRAM_BOT_TOKEN": "test-only", "TELEGRAM_CHAT_ID": "test-only"}), \
+             patch.object(radar.core.requests, "post", return_value=response):
+            self.assertTrue(radar.core.telegram("hello"))
+            response.json.return_value = {"ok": False}
+            self.assertFalse(radar.core.telegram("hello"))
+
+    def test_telegram_network_error_is_not_a_delivery(self):
+        with patch.dict(os.environ, {"TELEGRAM_BOT_TOKEN": "test-only", "TELEGRAM_CHAT_ID": "test-only"}), \
+             patch.object(radar.core.requests, "post", side_effect=TimeoutError("network failed")):
+            self.assertFalse(radar.core.telegram("hello"))
+
+    def test_failed_delivery_stays_eligible_and_is_marked_for_retry(self):
+        db = MagicMock()
+        debug = {"errors": []}
+        with patch.object(radar, "_notify", return_value=False):
+            delivered = radar.deliver_new_leads(db, [self.lead], self.now, debug)
+        self.assertEqual(delivered, 0)
+        self.assertEqual(debug["delivery_failures"], 1)
+        written = db.collection.return_value.document.return_value.set.call_args.args[0]
+        self.assertEqual(written["delivery_status"], "retry_pending")
+        self.assertNotIn("notified_at", written)
+
+    def test_successful_delivery_marks_only_confirmed_lead(self):
+        db = MagicMock()
+        debug = {"errors": []}
+        with patch.object(radar, "_notify", return_value=True):
+            delivered = radar.deliver_new_leads(db, [self.lead], self.now, debug)
+        self.assertEqual(delivered, 1)
+        written = db.collection.return_value.document.return_value.set.call_args.args[0]
+        self.assertEqual(written["delivery_status"], "delivered")
+        self.assertEqual(written["notified_at"], self.now.isoformat())
+        self.assertEqual(debug["delivery_failures"], 0)
+
+    def test_unnotified_record_can_be_retried_in_next_run(self):
+        db = MagicMock()
+        snap = db.collection.return_value.document.return_value.get.return_value
+        snap.exists = True
+        snap.to_dict.return_value = {"notified_at": None, "first_seen_at": self.now.isoformat()}
+        self.assertTrue(radar._save_new(db, dict(self.lead), self.now))
+
+
+class NorthlabSourceHealthRegressionTests(unittest.TestCase):
+    def test_failed_requests_are_not_reported_as_healthy_zero_results(self):
+        response = MagicMock()
+        response.status_code = 429
+        with patch.object(source_hub, "DISCOVERY_QUERIES", []), \
+             patch.object(source_hub, "REDDIT_FEEDS", [("test", "https://www.reddit.com/r/test/new/.rss")]), \
+             patch.object(source_hub, "BLUESKY_QUERIES", ["need website"]), \
+             patch.object(source_hub.SESSION, "get", return_value=response):
+            rows, meta = source_hub.collect_all()
+        self.assertEqual(rows, [])
+        self.assertEqual(meta["source_health"]["reddit"]["status"], "unavailable")
+        self.assertEqual(meta["source_health"]["reddit"]["failures"]["http_429"], 1)
+        self.assertEqual(meta["source_health"]["bluesky"]["status"], "unavailable")
+        self.assertEqual(meta["source_health"]["youtube"]["status"], "no_targets")
+        self.assertEqual(meta["source_health"]["forums"]["status"], "no_targets")
+
+    def test_partial_source_failure_is_distinct_from_success(self):
+        health = {}
+        source_hub._record_health(health, True)
+        source_hub._record_health(health, False, "http_403")
+        report = source_hub._health_report(health)
+        self.assertEqual(report["status"], "degraded")
+        self.assertEqual(report["succeeded"], 1)
+        self.assertEqual(report["failed"], 1)
+
 
 
 if __name__ == "__main__":
