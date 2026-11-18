@@ -64,7 +64,7 @@ FORUM_HINTS = ("forum", "community", "discourse", "phpbb", "xenforo", "smf", "in
 
 
 
-def _record_health(health: dict | None, success: bool, error: str = "") -> None:
+def record_source_attempt(health: dict | None, success: bool, error: str = "") -> None:
     if health is None:
         return
     health["attempted"] = health.get("attempted", 0) + 1
@@ -75,7 +75,7 @@ def _record_health(health: dict | None, success: bool, error: str = "") -> None:
         failures[error or "unknown"] = failures.get(error or "unknown", 0) + 1
 
 
-def _health_report(health: dict) -> dict:
+def summarize_source_health(health: dict) -> dict:
     attempts = health.get("attempted", 0)
     succeeded = health.get("succeeded", 0)
     if not attempts:
@@ -120,7 +120,7 @@ def reddit_adapter(health: dict | None = None) -> list[dict]:
         try:
             r = SESSION.get(url, timeout=25)
             if r.status_code != 200:
-                _record_health(health, False, f"http_{r.status_code}")
+                record_source_attempt(health, False, f"http_{r.status_code}")
                 print("NORTHLAB_REDDIT_HTTP", label, r.status_code)
                 continue
             root = ET.fromstring(r.content)
@@ -152,9 +152,9 @@ def reddit_adapter(health: dict | None = None) -> list[dict]:
                     "url": link,
                     "published": published,
                 })
-            _record_health(health, True)
+            record_source_attempt(health, True)
         except Exception as exc:
-            _record_health(health, False, type(exc).__name__)
+            record_source_attempt(health, False, type(exc).__name__)
             print("NORTHLAB_REDDIT_ERROR", label, type(exc).__name__, exc)
     print("NORTHLAB_SOURCE reddit", len(out))
     return out
@@ -167,7 +167,7 @@ def bluesky_adapter(health: dict | None = None) -> list[dict]:
         try:
             r = SESSION.get(endpoint, params={"q": q, "limit": 50, "sort": "latest"}, timeout=25)
             if r.status_code != 200:
-                _record_health(health, False, f"http_{r.status_code}")
+                record_source_attempt(health, False, f"http_{r.status_code}")
                 print("NORTHLAB_BLUESKY_HTTP", r.status_code, q)
                 continue
             for row in r.json().get("posts", []) or []:
@@ -185,9 +185,9 @@ def bluesky_adapter(health: dict | None = None) -> list[dict]:
                     "url": f"https://bsky.app/profile/{handle}/post/{rkey}" if handle and rkey else "",
                     "published": record.get("createdAt") or row.get("indexedAt") or "",
                 })
-            _record_health(health, True)
+            record_source_attempt(health, True)
         except Exception as exc:
-            _record_health(health, False, type(exc).__name__)
+            record_source_attempt(health, False, type(exc).__name__)
             print("NORTHLAB_BLUESKY_ERROR", q, type(exc).__name__, exc)
     print("NORTHLAB_SOURCE bluesky", len(out))
     return out
@@ -198,7 +198,7 @@ def bing_rss(query: str, health: dict | None = None) -> list[dict]:
         url = "https://www.bing.com/search?format=rss&q=" + quote_plus(query)
         r = SESSION.get(url, timeout=20)
         if r.status_code != 200:
-            _record_health(health, False, f"http_{r.status_code}")
+            record_source_attempt(health, False, f"http_{r.status_code}")
             return []
         root = ET.fromstring(r.content)
         out = []
@@ -209,10 +209,10 @@ def bing_rss(query: str, health: dict | None = None) -> list[dict]:
                 "url": _clean(item.findtext("link") or ""),
                 "published": _clean(item.findtext("pubDate") or ""),
             })
-        _record_health(health, True)
+        record_source_attempt(health, True)
         return out
     except Exception as exc:
-        _record_health(health, False, type(exc).__name__)
+        record_source_attempt(health, False, type(exc).__name__)
         return []
 
 
@@ -239,7 +239,7 @@ def youtube_adapter(urls: list[str], health: dict | None = None) -> list[dict]:
         from youtube_comment_downloader import YoutubeCommentDownloader, SORT_BY_RECENT
     except Exception as exc:
         if urls:
-            _record_health(health, False, "dependency_unavailable")
+            record_source_attempt(health, False, "dependency_unavailable")
         print("NORTHLAB_YOUTUBE_DISABLED", type(exc).__name__, exc)
         return []
     out = []
@@ -263,10 +263,10 @@ def youtube_adapter(urls: list[str], health: dict | None = None) -> list[dict]:
                     "published": str(row.get("time_parsed") or row.get("time") or ""),
                 })
                 count += 1
-            _record_health(health, True)
+            record_source_attempt(health, True)
             print("NORTHLAB_YOUTUBE_OK", count, url)
         except Exception as exc:
-            _record_health(health, False, type(exc).__name__)
+            record_source_attempt(health, False, type(exc).__name__)
             print("NORTHLAB_YOUTUBE_ERROR", type(exc).__name__, url, exc)
     print("NORTHLAB_SOURCE youtube", len(out))
     return out
@@ -285,7 +285,7 @@ def forum_adapter(urls: list[str], health: dict | None = None) -> list[dict]:
                 check=False,
             )
             if p.returncode != 0:
-                _record_health(health, False, f"extractor_exit_{p.returncode}")
+                record_source_attempt(health, False, f"extractor_exit_{p.returncode}")
                 print("NORTHLAB_FORUM_ERROR", p.returncode, url, p.stderr[-220:])
                 continue
             for line in p.stdout.splitlines():
@@ -314,9 +314,9 @@ def forum_adapter(urls: list[str], health: dict | None = None) -> list[dict]:
                     "url": _clean(obj.get("url") or obj.get("permalink") or obj.get("link") or url),
                     "published": _clean(obj.get("date") or obj.get("created_at") or obj.get("published") or ""),
                 })
-            _record_health(health, True)
+            record_source_attempt(health, True)
         except Exception as exc:
-            _record_health(health, False, type(exc).__name__)
+            record_source_attempt(health, False, type(exc).__name__)
             print("NORTHLAB_FORUM_EXCEPTION", type(exc).__name__, url, exc)
     print("NORTHLAB_SOURCE forums", len(out))
     return out
@@ -326,7 +326,7 @@ def collect_all() -> tuple[list[dict], dict]:
     discovery_health: dict = {}
     youtube_urls, forum_urls = discover_surfaces(health=discovery_health)
     sources = {}
-    source_health = {"discovery": _health_report(discovery_health)}
+    source_health = {"discovery": summarize_source_health(discovery_health)}
     all_rows = []
     adapters = [
         ("reddit", reddit_adapter),
@@ -339,10 +339,10 @@ def collect_all() -> tuple[list[dict], dict]:
         try:
             rows = fn(health)
         except Exception as exc:
-            _record_health(health, False, type(exc).__name__)
+            record_source_attempt(health, False, type(exc).__name__)
             print("NORTHLAB_SOURCE_ADAPTER_ERROR", name, type(exc).__name__, exc)
             rows = []
-        source_health[name] = _health_report(health)
+        source_health[name] = summarize_source_health(health)
         sources[name] = len(rows)
         all_rows.extend(rows)
     return all_rows, {
