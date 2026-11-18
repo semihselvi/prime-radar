@@ -63,6 +63,38 @@ DISCOVERY_QUERIES = [
 FORUM_HINTS = ("forum", "community", "discourse", "phpbb", "xenforo", "smf", "invision")
 
 
+
+def record_source_attempt(health: dict | None, success: bool, error: str = "") -> None:
+    if health is None:
+        return
+    health["attempted"] = health.get("attempted", 0) + 1
+    if success:
+        health["succeeded"] = health.get("succeeded", 0) + 1
+    else:
+        failures = health.setdefault("failures", {})
+        failures[error or "unknown"] = failures.get(error or "unknown", 0) + 1
+
+
+def summarize_source_health(health: dict) -> dict:
+    attempts = health.get("attempted", 0)
+    succeeded = health.get("succeeded", 0)
+    if not attempts:
+        state = "no_targets"
+    elif succeeded == attempts:
+        state = "healthy"
+    elif succeeded:
+        state = "degraded"
+    else:
+        state = "unavailable"
+    return {
+        "status": state,
+        "attempted": attempts,
+        "succeeded": succeeded,
+        "failed": attempts - succeeded,
+        "failures": dict(health.get("failures") or {}),
+    }
+
+
 def _clean(v: str) -> str:
     return " ".join(str(v or "").split())
 
@@ -80,7 +112,7 @@ def _parse_dt(raw: str):
         return None
 
 
-def reddit_adapter() -> list[dict]:
+def reddit_adapter(health: dict | None = None) -> list[dict]:
     out = []
     cutoff = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)
     ns = {"a": "http://www.w3.org/2005/Atom"}
@@ -88,6 +120,7 @@ def reddit_adapter() -> list[dict]:
         try:
             r = SESSION.get(url, timeout=25)
             if r.status_code != 200:
+                record_source_attempt(health, False, f"http_{r.status_code}")
                 print("NORTHLAB_REDDIT_HTTP", label, r.status_code)
                 continue
             root = ET.fromstring(r.content)
@@ -119,19 +152,22 @@ def reddit_adapter() -> list[dict]:
                     "url": link,
                     "published": published,
                 })
+            record_source_attempt(health, True)
         except Exception as exc:
+            record_source_attempt(health, False, type(exc).__name__)
             print("NORTHLAB_REDDIT_ERROR", label, type(exc).__name__, exc)
     print("NORTHLAB_SOURCE reddit", len(out))
     return out
 
 
-def bluesky_adapter() -> list[dict]:
+def bluesky_adapter(health: dict | None = None) -> list[dict]:
     out = []
     endpoint = "https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts"
     for q in BLUESKY_QUERIES:
         try:
             r = SESSION.get(endpoint, params={"q": q, "limit": 50, "sort": "latest"}, timeout=25)
             if r.status_code != 200:
+                record_source_attempt(health, False, f"http_{r.status_code}")
                 print("NORTHLAB_BLUESKY_HTTP", r.status_code, q)
                 continue
             for row in r.json().get("posts", []) or []:
@@ -149,17 +185,20 @@ def bluesky_adapter() -> list[dict]:
                     "url": f"https://bsky.app/profile/{handle}/post/{rkey}" if handle and rkey else "",
                     "published": record.get("createdAt") or row.get("indexedAt") or "",
                 })
+            record_source_attempt(health, True)
         except Exception as exc:
+            record_source_attempt(health, False, type(exc).__name__)
             print("NORTHLAB_BLUESKY_ERROR", q, type(exc).__name__, exc)
     print("NORTHLAB_SOURCE bluesky", len(out))
     return out
 
 
-def bing_rss(query: str) -> list[dict]:
+def bing_rss(query: str, health: dict | None = None) -> list[dict]:
     try:
         url = "https://www.bing.com/search?format=rss&q=" + quote_plus(query)
         r = SESSION.get(url, timeout=20)
         if r.status_code != 200:
+            record_source_attempt(health, False, f"http_{r.status_code}")
             return []
         root = ET.fromstring(r.content)
         out = []
@@ -170,17 +209,19 @@ def bing_rss(query: str) -> list[dict]:
                 "url": _clean(item.findtext("link") or ""),
                 "published": _clean(item.findtext("pubDate") or ""),
             })
+        record_source_attempt(health, True)
         return out
-    except Exception:
+    except Exception as exc:
+        record_source_attempt(health, False, type(exc).__name__)
         return []
 
 
-def discover_surfaces() -> tuple[list[str], list[str]]:
+def discover_surfaces(health: dict | None = None) -> tuple[list[str], list[str]]:
     youtube = []
     forums = []
     seen = set()
     for q in DISCOVERY_QUERIES:
-        for row in bing_rss(q):
+        for row in bing_rss(q, health=health):
             url = row.get("url") or ""
             if not url or url in seen:
                 continue
@@ -193,10 +234,12 @@ def discover_surfaces() -> tuple[list[str], list[str]]:
     return youtube[:YOUTUBE_VIDEO_LIMIT], forums[:FORUM_URL_LIMIT]
 
 
-def youtube_adapter(urls: list[str]) -> list[dict]:
+def youtube_adapter(urls: list[str], health: dict | None = None) -> list[dict]:
     try:
         from youtube_comment_downloader import YoutubeCommentDownloader, SORT_BY_RECENT
     except Exception as exc:
+        if urls:
+            record_source_attempt(health, False, "dependency_unavailable")
         print("NORTHLAB_YOUTUBE_DISABLED", type(exc).__name__, exc)
         return []
     out = []
@@ -220,14 +263,16 @@ def youtube_adapter(urls: list[str]) -> list[dict]:
                     "published": str(row.get("time_parsed") or row.get("time") or ""),
                 })
                 count += 1
+            record_source_attempt(health, True)
             print("NORTHLAB_YOUTUBE_OK", count, url)
         except Exception as exc:
+            record_source_attempt(health, False, type(exc).__name__)
             print("NORTHLAB_YOUTUBE_ERROR", type(exc).__name__, url, exc)
     print("NORTHLAB_SOURCE youtube", len(out))
     return out
 
 
-def forum_adapter(urls: list[str]) -> list[dict]:
+def forum_adapter(urls: list[str], health: dict | None = None) -> list[dict]:
     out = []
     timeout = int(os.getenv("NORTHLAB_FORUM_DL_TIMEOUT", "35"))
     for url in urls:
@@ -240,6 +285,7 @@ def forum_adapter(urls: list[str]) -> list[dict]:
                 check=False,
             )
             if p.returncode != 0:
+                record_source_attempt(health, False, f"extractor_exit_{p.returncode}")
                 print("NORTHLAB_FORUM_ERROR", p.returncode, url, p.stderr[-220:])
                 continue
             for line in p.stdout.splitlines():
@@ -268,31 +314,40 @@ def forum_adapter(urls: list[str]) -> list[dict]:
                     "url": _clean(obj.get("url") or obj.get("permalink") or obj.get("link") or url),
                     "published": _clean(obj.get("date") or obj.get("created_at") or obj.get("published") or ""),
                 })
+            record_source_attempt(health, True)
         except Exception as exc:
+            record_source_attempt(health, False, type(exc).__name__)
             print("NORTHLAB_FORUM_EXCEPTION", type(exc).__name__, url, exc)
     print("NORTHLAB_SOURCE forums", len(out))
     return out
 
 
 def collect_all() -> tuple[list[dict], dict]:
-    youtube_urls, forum_urls = discover_surfaces()
+    discovery_health: dict = {}
+    youtube_urls, forum_urls = discover_surfaces(health=discovery_health)
     sources = {}
+    source_health = {"discovery": summarize_source_health(discovery_health)}
     all_rows = []
-    for name, fn in [
+    adapters = [
         ("reddit", reddit_adapter),
         ("bluesky", bluesky_adapter),
-        ("youtube", lambda: youtube_adapter(youtube_urls)),
-        ("forums", lambda: forum_adapter(forum_urls)),
-    ]:
+        ("youtube", lambda health: youtube_adapter(youtube_urls, health=health)),
+        ("forums", lambda health: forum_adapter(forum_urls, health=health)),
+    ]
+    for name, fn in adapters:
+        health: dict = {}
         try:
-            rows = fn()
+            rows = fn(health)
         except Exception as exc:
+            record_source_attempt(health, False, type(exc).__name__)
             print("NORTHLAB_SOURCE_ADAPTER_ERROR", name, type(exc).__name__, exc)
             rows = []
+        source_health[name] = summarize_source_health(health)
         sources[name] = len(rows)
         all_rows.extend(rows)
     return all_rows, {
         "source_counts": sources,
+        "source_health": source_health,
         "youtube_urls": len(youtube_urls),
         "forum_urls": len(forum_urls),
     }

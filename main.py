@@ -626,7 +626,7 @@ def telegram(text):
 
     if not token or not chat:
         print("TELEGRAM_NOT_CONFIGURED")
-        return
+        return False
 
     try:
 
@@ -641,12 +641,17 @@ def telegram(text):
         )
 
         r.raise_for_status()
+        if r.json().get("ok") is not True:
+            print("TELEGRAM_ERROR api_not_ok")
+            return False
+        return True
 
     except Exception as e:
 
         print(
-            f"TELEGRAM_ERROR {e}"
+            f"TELEGRAM_ERROR {type(e).__name__}"
         )
+        return False
 
 
 
