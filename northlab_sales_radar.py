@@ -16,9 +16,8 @@ import requests
 
 import main as core
 import northlab_sales_source_hub as source_hub
-from northlab_sales_qualification import qualify_for_sales_alert
 
-VERSION = "2.4-content-and-promo-guard"
+VERSION = "3.0-single-buyer-decision"
 COLLECTION = "northlab_sales_project_leads"
 SCAN_COLLECTION = "northlab_sales_project_scans"
 TELEGRAM_HOURS = int(os.getenv("NORTHLAB_TELEGRAM_HOURS", "24"))
@@ -481,10 +480,50 @@ def project_types(text: str) -> list[str]:
     return [name for name, rx in PROJECT_PATTERNS if rx.search(text or "")]
 
 
-def classify(text: str) -> tuple[dict[str, Any] | None, str]:
+BUYER_SPEAKER_RE = re.compile(
+    r"(?:"
+    r"\b(?:we|i)\s+(?:really\s+)?(?:need|want|are\s+looking\s+for|am\s+looking\s+for|"
+    r"are\s+seeking|am\s+seeking|would\s+like\s+to|plan\s+to|want\s+to\s+hire)\b|"
+    r"\b(?:our|my)\s+(?:business|company|restaurant|hotel|clinic|store|shop|agency|team)\b"
+    r".{0,90}\b(?:need|needs|want|wants|looking\s+for|seeking|hire|hiring|redesign)\b|"
+    r"\b(?:looking\s+for|seeking|hiring)\s+(?:a\s+|an\s+)?"
+    r"(?:developer|agency|web\s+designer|software\s+company|someone)\b"
+    r".{0,120}\b(?:my|our|company|business|project|build|develop|redesign)\b|"
+    r"\b(?:firmam[ıi]z|i[sş]letmemiz|[sş]irketimiz|bizim\s+(?:i[sş]letme|[sş]irket))\b"
+    r".{0,140}\b(?:laz[ıi]m|ihtiyac|ar[ıi]yoruz|yapt[ıi]rmak|teklif|geli[sş]tir)\w*|"
+    r"\b(?:нам|мы|нашему\s+бизнесу|нашей\s+компании|для\s+нашей\s+компании)\b"
+    r".{0,140}\b(?:нужен|нужна|нужно|ищем|разработ|создать|сделать|система|систему)\w*|"
+    r"\b(?:нужен|нужна|нужно)\b.{0,90}\b(?:для\s+нашей\s+компании|для\s+нашего\s+бизнеса)\b"
+    r")",
+    re.I | re.S,
+)
+
+# A user asking somebody to USE an existing site is not buying a site.
+EXISTING_SITE_TASK_RE = re.compile(
+    r"(?:зарегистрирова\w*|регистрац\w*|авторизова\w*|"
+    r"login|log\s*in|sign\s*up|register\s+(?:on|at|to)|"
+    r"oturum\s+a[çc]|kay[ıi]t\s+ol)\b.{0,100}"
+    r"(?:\b(?:сайт\w*|site|website|магазин\w*|shop|portal)\b)|"
+    r"\b(?:на|в|через)\s+сайт\w*\b.{0,100}"
+    r"(?:зарегистрирова\w*|регистрац\w*|войти|вход)",
+    re.I | re.S,
+)
+
+# Generic educational questions do not identify a commissioning buyer.
+EDITORIAL_QUESTION_RE = re.compile(
+    r"(?:\bdo\s+i\s+need\s+a\s+website\b|\bwhat\s+is\s+(?:a\s+)?website\b|"
+    r"\bhow\s+to\s+(?:build|create|make)\s+(?:a\s+)?website\b)",
+    re.I,
+)
+
+def classify(text: str, *, author: str = "", url: str = "") -> tuple[dict[str, Any] | None, str]:
     value = " ".join(str(text or "").split())
     if not value:
         return None, "empty"
+    if EXISTING_SITE_TASK_RE.search(value):
+        return None, "existing_site_task_not_development"
+    if EDITORIAL_QUESTION_RE.search(value):
+        return None, "editorial_question_not_purchase"
     if JOB_SEEKER_RE.search(value):
         return None, "job_seeker"
     if EMPLOYMENT_RE.search(value):
@@ -561,12 +600,23 @@ def classify(text: str) -> tuple[dict[str, Any] | None, str]:
     if types:
         reasons.append("project:" + ",".join(types))
 
+    if not BUYER_SPEAKER_RE.search(value):
+        decision, decision_reason = "review", "buyer_intent_unverified"
+    elif not str(author or "").strip() or str(author).strip().casefold() in {"-", "unknown", "anonymous"}:
+        decision, decision_reason = "review", "buyer_identity_unverified"
+    elif not str(url or "").strip():
+        decision, decision_reason = "review", "source_link_missing"
+    else:
+        decision, decision_reason = "ready", "attributed_buyer_request"
+
     return {
         "lead_class": lead_class,
         "intent_score": min(score, 98),
         "project_types": types,
         "language": detect_language(value),
         "reasons": reasons,
+        "qualification_status": decision,
+        "qualification_reason": decision_reason,
     }, "accepted"
 
 
@@ -637,28 +687,15 @@ def _mark_retry_pending(db_client, lead: dict[str, Any], now: datetime) -> None:
 
 
 def deliver_new_leads(db_client, leads: list[dict[str, Any]], now: datetime, debug: dict[str, Any]) -> int:
-    """Discover broadly; only evidenced, attributable buyer demand reaches Telegram.
-
-    All non-ready records remain in Firestore with an explicit reason and
-    are never marked as notified. This separates research from outreach.
-    """
+    """Deliver a single classification decision; do not reclassify the text."""
     delivered = 0
     attempts = 0
     review = 0
-    rejected = 0
     for lead in leads:
         if lead.get("lead_class") == "WATCH":
             continue
-        state, reason = qualify_for_sales_alert(lead)
-        if state != "ready":
-            if state == "review":
-                review += 1
-            else:
-                rejected += 1
-            db_client.collection(COLLECTION).document(lead["lead_id"]).set(
-                {"qualification_status": state, "qualification_reason": reason,
-                 "last_qualification_at": now.isoformat()}, merge=True,
-            )
+        if lead.get("qualification_status") != "ready":
+            review += 1
             continue
         if attempts >= MAX_ALERTS:
             continue
@@ -672,7 +709,6 @@ def deliver_new_leads(db_client, leads: list[dict[str, Any]], now: datetime, deb
     debug["delivery_attempts"] = attempts
     debug["delivery_failures"] = attempts - delivered
     debug["qualification_review"] = review
-    debug["qualification_rejected"] = rejected
     return delivered
 
 async def scan_telegram(db_client, now: datetime, debug: dict[str, Any]) -> list[dict[str, Any]]:
@@ -723,7 +759,7 @@ async def scan_telegram(db_client, now: datetime, debug: dict[str, Any]) -> list
                     if BOT_AUTHOR_RE.search(str(author or "")):
                         debug["rejects"]["bot_author"] += 1
                         continue
-                    signal, reason = classify(text)
+                    signal, reason = classify(text, author=author, url=core.tg_link(dialog.entity, getattr(msg, "id", 0)))
                     if signal is None:
                         debug["rejects"][reason] += 1
                         continue
@@ -793,7 +829,7 @@ async def scan_telegram(db_client, now: datetime, debug: dict[str, Any]) -> list
                         debug["rejects"]["bot_author"] += 1
                         continue
 
-                    signal, reason = classify(text)
+                    signal, reason = classify(text, author=author, url=f"https://t.me/{username}/{msg.id}")
                     if signal is None:
                         debug["rejects"][reason] += 1
                         continue
@@ -874,7 +910,7 @@ def scan_web(db_client, now: datetime, debug: dict[str, Any]) -> list[dict[str, 
             if host in KNOWN_PLATFORM_HOSTS or PLATFORM_PROMO_RE.search(blob):
                 debug["web_rejects"]["platform_or_product_promo"] += 1
                 continue
-            signal, reason = classify(blob)
+            signal, reason = classify(blob, author=str(row.get('author') or ''), url=str(row.get('url') or ''))
             if signal is None:
                 debug["web_rejects"][reason] += 1
                 continue
