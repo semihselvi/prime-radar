@@ -809,11 +809,12 @@ async def scan_telegram(db_client, now: datetime, debug: dict[str, Any]) -> list
     return out
 
 
-def _bing_rss(query: str) -> list[dict[str, Any]]:
+def _bing_rss(query: str, health: dict | None = None) -> list[dict[str, Any]]:
     url = "https://www.bing.com/search?format=rss&q=" + urllib.parse.quote_plus(query)
     try:
         r = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (compatible; NorthlabSalesRadar/1.0)"}, timeout=20)
         if r.status_code != 200:
+            source_hub._record_health(health, False, f"http_{r.status_code}")
             return []
         root = ET.fromstring(r.content)
         out = []
@@ -830,16 +831,19 @@ def _bing_rss(query: str) -> list[dict[str, Any]]:
                 "published": item.findtext("pubDate") or "",
                 "author": "",
             })
+        source_hub._record_health(health, True)
         return out
-    except Exception:
+    except Exception as exc:
+        source_hub._record_health(health, False, type(exc).__name__)
         return []
 
 
 def scan_web(db_client, now: datetime, debug: dict[str, Any]) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     seen: set[str] = set()
+    health: dict = {}
     for query in WEB_QUERIES[:max(1, WEB_QUERY_LIMIT)]:
-        rows = _bing_rss(query)
+        rows = _bing_rss(query, health=health)
         debug["web_raw"] += len(rows)
         for row in rows:
             key = str(row.get("url") or "")
@@ -862,6 +866,7 @@ def scan_web(db_client, now: datetime, debug: dict[str, Any]) -> list[dict[str, 
             debug["languages"][signal["language"]] += 1
             if _save_new(db_client, lead, now):
                 out.append(lead)
+    debug["source_health"]["web_search"] = source_hub._health_report(health)
     return out
 
 
@@ -909,7 +914,7 @@ def main() -> None:
     hub_rows, hub_meta = source_hub.collect_all()
     debug["hub_raw"] = len(hub_rows)
     debug["hub_source_counts"] = hub_meta.get("source_counts", {})
-    debug["source_health"] = hub_meta.get("source_health", {})
+    debug["source_health"].update(hub_meta.get("source_health", {}))
     debug["hub_youtube_urls"] = hub_meta.get("youtube_urls", 0)
     debug["hub_forum_urls"] = hub_meta.get("forum_urls", 0)
     hub_new = source_hub.process_rows(
