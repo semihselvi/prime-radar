@@ -1,0 +1,56 @@
+name: Prime Buyer Radar - Read-only production connectivity smoke
+
+"on":
+  push:
+    branches:
+      - repair/prime-buyer-gate-review-20261118
+    paths:
+      - ".github/workflows/prime-buyer-integration-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  read-only-smoke:
+    if: github.repository == 'semihselvi/prime-radar' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install production dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Verify Firestore read and Telegram bot/chat access (no writes or messages)
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python - <<'PY'
+          import os
+          import requests
+          import main as core
+
+          if not os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON"):
+              raise RuntimeError("Missing Firestore service-account secret")
+          db = core.db()
+          next(iter(db.collection(core.COLLECTION).limit(1).stream()), None)
+          print("SMOKE_PASS prime_firestore_read_only")
+
+          token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+          chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()
+          if not token or not chat_id:
+              raise RuntimeError("Missing Telegram connection secret")
+          response = requests.post(
+              f"https://api.telegram.org/bot{token}/getChat",
+              json={"chat_id": chat_id},
+              timeout=15,
+          )
+          response.raise_for_status()
+          if response.json().get("ok") is not True:
+              raise RuntimeError("Telegram bot cannot access configured chat")
+          print("SMOKE_PASS prime_telegram_read_only_chat_access")
+          PY

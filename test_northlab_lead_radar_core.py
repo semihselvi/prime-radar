@@ -1,3 +1,4 @@
+import os
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -22,6 +23,7 @@ class NorthlabLeadRadarCoreTests(unittest.TestCase):
             "lead_class": "WARM BUYER",
             "message": "Ищу кто продает от собственника 2+1 в 4 очереди Цезаря",
             "lead_reasons": ["implicit_property_demand", "owner_direct_buyer_preference"],
+            "intent_score": 80,
             "specificity": 3,
         }))
 
@@ -150,6 +152,17 @@ class PrimeBuyerNotificationRecoveryTests(unittest.TestCase):
         mark.assert_called_once()
 
 
+class PrimeBuyerPolicyIsolationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_scan_restores_environment_after_exception(self):
+        with patch.dict(os.environ, {"RADAR_SALES_ONLY": "0"}):
+            with patch.object(core.radar.core, "db", return_value=MagicMock()), \
+                 patch.object(core.radar, "broad_telegram_scan", new_callable=AsyncMock) as scan:
+                scan.return_value = {"status": "skipped_unauthorized", "new_leads": []}
+                with self.assertRaises(RuntimeError):
+                    await core.scan_once()
+            self.assertEqual(os.environ["RADAR_SALES_ONLY"], "0")
+
+
 class PrimeBuyerScanFailureTests(unittest.IsolatedAsyncioTestCase):
     async def test_unauthorized_telegram_scan_fails_workflow(self):
         with patch.object(core.radar.core, "db", return_value=MagicMock()), patch.object(
@@ -158,6 +171,78 @@ class PrimeBuyerScanFailureTests(unittest.IsolatedAsyncioTestCase):
             scan.return_value = {"status": "skipped_unauthorized", "new_leads": []}
             with self.assertRaisesRegex(RuntimeError, "skipped_unauthorized"):
                 await core.scan_once()
+
+
+class PrimeBuyerCanonicalGateTests(unittest.TestCase):
+    def setUp(self):
+        self.uncertain = {
+            "lead_id": "review-candidate-001",
+            "market": "north_cyprus",
+            "intent_type": "BUYER",
+            "lead_class": "WARM BUYER",
+            "message": "Ищу 2+1 в искеле от собственника с помесячной оплатой",
+            "lead_reasons": ["implicit_property_demand", "owner_direct_buyer_preference"],
+            "specificity": 2,
+            "intent_score": 74,
+        }
+
+    def test_uncertain_owner_direct_request_is_review_not_alert(self):
+        eligible, reason = core.radar.buyer_notification_eligibility(self.uncertain)
+        self.assertFalse(eligible)
+        self.assertEqual(reason, "buyer_needs_review")
+        self.assertFalse(core.is_actionable_buyer(self.uncertain))
+        with patch.object(core.radar.core, "telegram") as telegram:
+            self.assertFalse(core.radar.notify_lead(self.uncertain))
+            telegram.assert_not_called()
+
+    def test_stronger_owner_direct_signal_uses_same_final_gate(self):
+        stronger = dict(self.uncertain, intent_score=80, specificity=3)
+        eligible, reason = core.radar.buyer_notification_eligibility(stronger)
+        self.assertTrue(eligible, reason)
+        self.assertTrue(core.is_actionable_buyer(stronger))
+
+    def test_review_queue_is_idempotent(self):
+        from datetime import datetime, timezone
+        db = MagicMock()
+        doc = db.collection.return_value.document.return_value
+        doc.get.return_value.exists = False
+        now = datetime(2026, 11, 18, tzinfo=timezone.utc)
+        self.assertTrue(core._record_review_pending(db, self.uncertain, "buyer_needs_review", now))
+        payload = doc.set.call_args.args[0]
+        self.assertEqual(payload["buyer_review_status"], "pending")
+        self.assertNotIn("v6_notified_at", payload)
+        doc.get.return_value.exists = True
+        doc.get.return_value.to_dict.return_value = payload
+        self.assertFalse(core._record_review_pending(db, self.uncertain, "buyer_needs_review", now))
+        self.assertEqual(doc.set.call_count, 1)
+
+
+class PrimeBuyerReviewScanTests(unittest.IsolatedAsyncioTestCase):
+    async def test_scan_persists_uncertain_buyer_without_false_notification(self):
+        from datetime import datetime, timezone
+        lead = {
+            "lead_id": "review-candidate-002",
+            "market": "north_cyprus",
+            "intent_type": "BUYER",
+            "lead_class": "WARM BUYER",
+            "message": "Ищу 2+1 в искеле от собственника с помесячной оплатой",
+            "lead_reasons": ["implicit_property_demand", "owner_direct_buyer_preference"],
+            "specificity": 2,
+            "intent_score": 74,
+        }
+        db = MagicMock()
+        db.collection.return_value.document.return_value.get.return_value.exists = False
+        with patch.object(core.radar.core, "db", return_value=db), \
+             patch.object(core.radar, "broad_telegram_scan", new_callable=AsyncMock) as scan, \
+             patch.object(core, "recover_recent_unnotified", return_value={"scanned": 0, "eligible": 0, "notified": 0, "review_saved": 0, "errors": 0}), \
+             patch.object(core.radar, "notify_lead") as notify:
+            scan.return_value = {"status": "completed", "new_leads": [lead], "groups": 1, "messages": 1, "errors": 0}
+            summary = await core.scan_once()
+        self.assertEqual(summary["review_saved"], 1)
+        self.assertEqual(summary["buyers"], 0)
+        self.assertEqual(summary["notified"], 0)
+        notify.assert_not_called()
+
 
 
 if __name__ == "__main__":

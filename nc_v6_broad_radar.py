@@ -3239,30 +3239,31 @@ def _clip(value: Any, n: int = 700) -> str:
     return text if len(text) <= n else text[: n - 3] + "..."
 
 
-def notify_lead(lead: dict[str, Any], prefix: str = "NEW") -> bool:
+def buyer_notification_eligibility(lead: dict[str, Any]) -> tuple[bool, str]:
+    """Single buyer-delivery policy, shared by new scans and recovery.
+
+    Uncertain buyer-shaped messages belong to a review queue, not Telegram.
+    """
     if str(lead.get("market") or "") != "north_cyprus":
-        return False
-    lead_class = str(lead.get("lead_class") or "WATCH")
-    intent_type = str(lead.get("intent_type") or "").upper()
-    message_text = str(lead.get("message") or lead.get("text") or "")
-    reasons = list(lead.get("lead_reasons") or [])
+        return False, "wrong_market"
+    if str(lead.get("intent_type") or "").upper() != "BUYER":
+        return False, "not_buyer_intent"
+    if str(lead.get("lead_class") or "") not in {"HOT BUYER", "WARM BUYER"}:
+        return False, "not_buyer_class"
+
+    text = str(lead.get("message") or lead.get("text") or "")
+    if RENT_DEMAND_RE.search(text):
+        return False, "rental"
+    if _hard_reject(text, str(lead.get("author") or "")):
+        return False, "hard_reject"
+    if not (PROPERTY_RE.search(text) or NC_PROJECT_RE.search(text)):
+        return False, "no_property_evidence"
+
+    reasons = {str(x) for x in (lead.get("lead_reasons") or [])}
+    if "implicit_property_demand" in reasons and not DEMAND_RE.search(text):
+        return False, "buyer_needs_review"
     score = int(lead.get("intent_score") or 0)
     specificity = int(lead.get("specificity") or 0)
-
-    # Wide capture stays broad in the database, but Telegram should only receive
-    # actionable purchase demand. Weak/early candidates remain stored as MAYBE.
-    if intent_type != "BUYER":
-        return False
-    if lead_class not in {"HOT BUYER", "WARM BUYER"}:
-        return False
-    if RENT_DEMAND_RE.search(message_text):
-        return False
-    if _hard_reject(message_text, str(lead.get("author") or "")):
-        return False
-    if not (PROPERTY_RE.search(message_text) or NC_PROJECT_RE.search(message_text)):
-        return False
-    if "implicit_property_demand" in reasons and not DEMAND_RE.search(message_text):
-        return False
 
     strong_reasons = {
         "explicit_purchase_intent",
@@ -3272,41 +3273,38 @@ def notify_lead(lead: dict[str, Any], prefix: str = "NEW") -> bool:
         "agent_client_purchase_request",
     }
     direct_purchase_text = bool(
-        BUY_RE.search(message_text)
-        or BUY_INTENT_VARIANTS_RE.search(message_text)
-        or (PURCHASE_MARKET_RE.search(message_text) and DEMAND_RE.search(message_text))
+        BUY_RE.search(text)
+        or BUY_INTENT_VARIANTS_RE.search(text)
+        or (PURCHASE_MARKET_RE.search(text) and DEMAND_RE.search(text))
     )
     strong = bool(strong_reasons.intersection(reasons)) or direct_purchase_text
     implicit_high_conf = (
-        "implicit_property_demand" in reasons
-        and score >= 78
-        and specificity >= 3
+        "implicit_property_demand" in reasons and score >= 78 and specificity >= 3
     )
     early_high_conf = (
-        "early_property_buyer_signal" in reasons
-        and score >= 82
-        and specificity >= 4
+        "early_property_buyer_signal" in reasons and score >= 82 and specificity >= 4
     )
     if not (strong or implicit_high_conf or early_high_conf):
-        print("BUYER_MAYBE_HELD", {
-            "score": score,
-            "specificity": specificity,
-            "author": str(lead.get("author") or "")[:80],
-            "group": str(lead.get("group") or "")[:120],
-            "reasons": reasons,
-            "url": str(lead.get("url") or "")[:220],
-            "message": _clip(message_text, 260),
-        })
+        return False, "buyer_needs_review"
+    return True, "eligible"
+
+
+def notify_lead(lead: dict[str, Any], prefix: str = "NEW") -> bool:
+    eligible, reason = buyer_notification_eligibility(lead)
+    if not eligible:
+        if reason == "buyer_needs_review":
+            print("BUYER_NEEDS_REVIEW", {
+                "lead_id": str(lead.get("lead_id") or "")[:70],
+                "reason": reason,
+            })
         return False
 
+    lead_class = str(lead.get("lead_class") or "WATCH")
+    message_text = str(lead.get("message") or lead.get("text") or "")
     print("BUYER_NOTIFY", {
-        "score": score,
-        "specificity": specificity,
-        "author": str(lead.get("author") or "")[:80],
-        "group": str(lead.get("group") or "")[:120],
-        "reasons": reasons,
-        "url": str(lead.get("url") or "")[:220],
-        "message": _clip(message_text, 260),
+        "lead_id": str(lead.get("lead_id") or "")[:70],
+        "score": int(lead.get("intent_score") or 0),
+        "reason_count": len(lead.get("lead_reasons") or []),
     })
 
     emoji = "🔥" if lead_class == "HOT BUYER" else "🟡"
@@ -3328,7 +3326,7 @@ def notify_lead(lead: dict[str, Any], prefix: str = "NEW") -> bool:
     )
     delivered = core.telegram(msg[:3900])
     if delivered is not True:
-        print("BUYER_NOTIFY_DELIVERY_FAILED", {"url": str(lead.get("url") or "")[:220]})
+        print("BUYER_NOTIFY_DELIVERY_FAILED", {"lead_id": str(lead.get("lead_id") or "")[:70]})
         return False
     return True
 

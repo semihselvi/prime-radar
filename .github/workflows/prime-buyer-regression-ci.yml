@@ -1,0 +1,43 @@
+name: Prime Buyer Radar - Regression Tests (no live scans)
+
+"on":
+  push:
+    branches:
+      - repair/prime-buyer-gate-review-20261118
+    paths:
+      - "nc_v6_broad_radar.py"
+      - "northlab_lead_radar_core.py"
+      - "audit_recent_buyers.py"
+      - "test_audit_recent_buyers.py"
+      - "test_northlab_lead_radar_core.py"
+      - ".github/workflows/prime-buyer-regression-ci.yml"
+  pull_request:
+    branches:
+      - production/radar
+    paths:
+      - "nc_v6_broad_radar.py"
+      - "northlab_lead_radar_core.py"
+      - "audit_recent_buyers.py"
+      - "test_audit_recent_buyers.py"
+      - "test_northlab_lead_radar_core.py"
+      - ".github/workflows/prime-buyer-regression-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install existing production dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Compile and verify buyer logic, recovery, and review queue
+        run: |
+          python -m py_compile nc_v6_broad_radar.py northlab_lead_radar_core.py audit_recent_buyers.py test_northlab_lead_radar_core.py test_audit_recent_buyers.py
+          python -m unittest -q test_northlab_lead_radar_core.py test_nc_v6_broad_radar.py test_prime_source_bootstrap.py test_audit_recent_buyers.py
