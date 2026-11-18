@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 
 import northlab_sales_radar as radar
 import northlab_sales_source_hub as source_hub
-from northlab_sales_qualification import qualify_for_sales_alert
 
 
 class NorthlabSalesRadarTests(unittest.TestCase):
@@ -274,6 +273,7 @@ class NorthlabDeliveryRegressionTests(unittest.TestCase):
         self.lead = {
             "lead_id": "known-test-lead",
             "lead_class": "HOT PROJECT",
+            "qualification_status": "ready",
             "platform": "Web",
             "author": "Project Buyer",
             "text": "We need a CRM integration for our business.",
@@ -362,61 +362,64 @@ class NorthlabSourceHealthRegressionTests(unittest.TestCase):
 
 
 class RealNotificationQualityRegressionTests(unittest.TestCase):
-    """Real false positives observed in the Nov 18 NorthLab Telegram alerts."""
+    """Fixture from actual bogus notifications, checked in the ONE decision path."""
 
-    def test_five_provided_false_positives_never_notify(self):
-        examples = [
-            ("Instagram seller CTA",
-             "Need a website for your business? Check the link in my bio and let's build something great!"),
-            ("Facebook web developer advertisement",
-             "Are you a business owner looking to take your business online and reach more customers? I'm King Tech, a web developer helping businesses create modern professional websites."),
-            ("SEO advice article",
-             "Do I need a website if I already have a Google Business Profile? Yes, for most businesses. A Profile drives discovery. See our web development and UI/UX design work."),
-            ("Russian site signup task",
-             "Нужно зарегистрироваться на сайте магазина — плачу 2000₽"),
-            ("Repeated Russian site signup task",
-             "Нужно зарегистрироваться на сайте магазина — плачу 2000₽"),
-        ]
+    BAD = [
+        "Need a website for your business? Check the link in my bio and let's build something great!",
+        "Are you a business owner looking to take your business online and reach more customers? I'm King Tech, a web developer helping businesses create modern professional websites.",
+        "Do I need a website if I already have a Google Business Profile? Yes, for most businesses. A Profile drives discovery. See our web development and UI/UX design work.",
+        "Нужно зарегистрироваться на сайте магазина — плачу 2000₽",
+        "Нужно зарегистрироваться на сайте магазина — плачу 2000₽",
+    ]
+
+    def test_actual_five_false_positives_do_not_trigger_notification(self):
         db = MagicMock()
         leads = []
-        for index, (label, content) in enumerate(examples):
-            lead = {"lead_id": f"false-positive-{index}", "lead_class": "WARM PROJECT",
-                    "text": content, "platform": "Web", "url": f"https://example.org/{index}",
-                    "author": f"speaker-{index}"}
-            state, _reason = qualify_for_sales_alert(lead)
-            self.assertEqual(state, "reject", label)
-            leads.append(lead)
+        for i, text in enumerate(self.BAD):
+            signal, _reason = radar.classify(text, author=f"source-author-{i}",
+                                             url=f"https://example.org/post/{i}")
+            if signal is not None:
+                self.assertNotEqual(signal["qualification_status"], "ready", text)
+                leads.append(dict(signal, lead_id=f"candidate-{i}", text=text))
         debug = {"errors": []}
         with patch.object(radar, "_notify") as notify:
-            count = radar.deliver_new_leads(db, leads,
-                                            datetime(2026, 11, 18, tzinfo=timezone.utc), debug)
-        self.assertEqual(count, 0)
-        self.assertEqual(debug["qualification_rejected"], 5)
+            delivered = radar.deliver_new_leads(db, leads,
+                                                  datetime(2026, 11, 18, tzinfo=timezone.utc), debug)
+        self.assertEqual(delivered, 0)
         self.assertEqual(debug["delivery_attempts"], 0)
         notify.assert_not_called()
 
-    def test_real_company_request_with_attributed_sender_is_ready(self):
-        lead = {"text": "We need an agency to build an online booking system for our hotel.",
-                "author": "Hotel Manager", "url": "https://example.org/post/12",
-                "lead_class": "HOT PROJECT"}
-        self.assertEqual(qualify_for_sales_alert(lead),
-                         ("ready", "attributed_buyer_request"))
+    def test_real_buyer_request_is_ready_at_classification_time(self):
+        lead, reason = radar.classify(
+            "We need an agency to build an online booking system for our hotel.",
+            author="Hotel Manager", url="https://example.org/post/12",
+        )
+        self.assertIsNotNone(lead, reason)
+        self.assertEqual(lead["qualification_status"], "ready")
+        self.assertEqual(lead["qualification_reason"], "attributed_buyer_request")
 
-    def test_legitimate_anonymous_web_request_is_held_for_review_not_spammed(self):
-        lead = {"text": "We need an agency to build a CRM for our business.",
-                "author": "", "url": "https://example.org/post/13",
-                "lead_class": "HOT PROJECT"}
-        self.assertEqual(qualify_for_sales_alert(lead),
-                         ("review", "buyer_identity_unverified"))
+    def test_anonymous_buyer_request_is_review_only(self):
+        lead, reason = radar.classify(
+            "We need an agency to build a CRM for our business.",
+            author="", url="https://example.org/post/13",
+        )
+        self.assertIsNotNone(lead, reason)
+        self.assertEqual(lead["qualification_status"], "review")
+        self.assertEqual(lead["qualification_reason"], "buyer_identity_unverified")
 
-    def test_explicit_tr_and_ru_business_buyers_are_preserved(self):
-        leads = [
-            {"text": "Firmamız için CRM sistemi lazım, teklif istiyoruz."},
-            {"text": "Нужна система онлайн-бронирования для нашей компании."},
-        ]
-        for lead in leads:
-            lead.update(author="Verified Contact", url="https://example.org/post")
-            self.assertEqual(qualify_for_sales_alert(lead)[0], "ready")
+    def test_valid_turkish_and_russian_business_buyers_still_work(self):
+        for value in (
+            "Firmamız için CRM sistemi lazım, teklif istiyoruz.",
+            "Нужна система онлайн-бронирования для нашей компании.",
+        ):
+            lead, reason = radar.classify(
+                value, author="Verified Business", url="https://example.org/post/18"
+            )
+            self.assertIsNotNone(lead, reason)
+            self.assertEqual(lead["qualification_status"], "ready")
+
+    def test_no_legacy_qualification_import(self):
+        self.assertNotIn("northlab_sales_qualification", radar.__dict__)
 
 
 if __name__ == "__main__":
