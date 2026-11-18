@@ -641,6 +641,9 @@ def telegram(text):
         )
 
         r.raise_for_status()
+        if r.json().get("ok") is not True:
+            print("TELEGRAM_ERROR api_not_ok")
+            return False
         return True
 
     except Exception as e:
