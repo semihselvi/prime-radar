@@ -62,11 +62,21 @@ jobs:
           print("Dedicated Prime Telegram session restored")
           PY
 
-      - name: Verify Prime buyer radar
+      - name: Verify Prime buyer radar and V5-free runtime
         run: |
-          python -m py_compile northlab_lead_radar_core.py nc_v6_broad_radar.py
+          python -m py_compile northlab_lead_radar_core.py nc_v6_broad_radar.py prime_buyer_policy.py prime_web_search.py
           python -m unittest -q test_northlab_lead_radar_core.py
-          python -m unittest -q test_nc_v6_broad_radar.py test_prime_source_bootstrap.py
+          python -m unittest -q test_nc_v6_broad_radar.py test_prime_source_bootstrap.py test_prime_runtime_independence.py
+          python - <<'PY'
+          import sys
+          import nc_v6_broad_radar
+          import northlab_lead_radar_core
+          legacy = sorted(name for name in sys.modules
+                          if name.startswith("main_v5") or name.startswith("nc_v5_"))
+          if legacy:
+              raise SystemExit(f"FATAL: Prime V5 runtime imported: {legacy}")
+          print("PRIME_ARCHITECTURE_CHECK_PASS V5_FREE")
+          PY
 
       - name: Run Prime Buyer Radar
         env:
