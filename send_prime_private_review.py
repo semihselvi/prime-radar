@@ -44,7 +44,7 @@ def run():
         message=" ".join(str(x.get("message") or x.get("text") or "").split())
         score=int(x.get("intent_score") or 0)
         specifics=int(x.get("specificity") or 0)
-        match=re.fullmatch(r"https?://t\\.me/(?:s/)?[A-Za-z0-9_]+/\\d+(?:\\?[^\\s]*)?",url)
+        match=re.fullmatch(r"https?://t\.me/(?:s/)?[A-Za-z0-9_]+/\d+(?:\?[^\s]*)?",url)
         if not match or not author or author in {"-","unknown"} or not message:continue
         key=url.split("?")[0].lower()
         if key in seen:continue
@@ -77,9 +77,9 @@ def run():
             "Bunlar dogrulanmis alici / satis firsati DEGILDIR.",
             "Otomatik HOT bildirimi yerine insan kontrolu icin secilen kayitlar:"]
     for i, (specificity,score,age,author,msg,url) in enumerate(chosen,1):
-        chunks.append(f"{i}) {author} | sinyal {score}/100 | ayrinti {specificity}\\n{msg[:230]}\\n{url}")
+        chunks.append(f"{i}) {author} | sinyal {score}/100 | ayrinti {specificity}\n{msg[:230]}\n{url}")
     chunks.append("Once satin alma niyetini, guncelligi ve dogrudan iletisim uygunlugunu teyit edin.")
-    body="\\n\\n".join(chunks)
+    body="\n\n".join(chunks)
     try:
         resp=requests.post(f"https://api.telegram.org/bot{token}/sendMessage",
                            json={"chat_id":chat,"text":body,"disable_web_page_preview":True},
