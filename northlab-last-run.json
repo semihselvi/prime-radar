@@ -2,17 +2,17 @@
   "status": "degraded",
   "version": "3.0-single-buyer-decision",
   "telegram_groups": 93,
-  "telegram_messages": 1153,
+  "telegram_messages": 984,
   "telegram_global_queries": 22,
   "telegram_global_messages": 234,
-  "web_raw": 224,
+  "web_raw": 230,
   "web_accepted": 0,
-  "hub_raw": 0,
+  "hub_raw": 123,
   "hub_accepted": 0,
   "hub_source_counts": {
     "reddit": 0,
     "bluesky": 0,
-    "youtube": 0,
+    "youtube": 123,
     "forums": 0
   },
   "source_health": {
@@ -50,9 +50,9 @@
       }
     },
     "youtube": {
-      "status": "no_targets",
-      "attempted": 0,
-      "succeeded": 0,
+      "status": "healthy",
+      "attempted": 2,
+      "succeeded": 2,
       "failed": 0,
       "failures": {}
     },
@@ -64,7 +64,7 @@
       "failures": {}
     }
   },
-  "hub_youtube_urls": 0,
+  "hub_youtube_urls": 2,
   "hub_forum_urls": 0,
   "errors": [
     "source_unavailable_or_degraded:bluesky,reddit"
@@ -73,31 +73,35 @@
   "delivery_failures": 0,
   "qualification_review": 0,
   "rejects": {
-    "no_project_signal": 696,
-    "marketplace_ad": 59,
-    "education": 30,
-    "duplicate_text": 220,
-    "bot_author": 148,
-    "weak_project_signal": 13,
-    "existing_site_task_not_development": 2,
-    "employment_vacancy": 4,
+    "no_project_signal": 615,
+    "marketplace_ad": 73,
+    "education": 38,
+    "bot_author": 68,
+    "crypto_or_earnings_recruitment": 2,
+    "duplicate_text": 181,
     "job_seeker": 4,
-    "news_content": 4
+    "employment_vacancy": 6,
+    "weak_project_signal": 13,
+    "news_content": 5,
+    "existing_site_task_not_development": 1
   },
   "web_rejects": {
-    "no_project_signal": 134,
-    "platform_or_product_promo": 20,
-    "weak_project_signal": 16,
-    "generic_support_thread": 1,
+    "no_project_signal": 139,
+    "platform_or_product_promo": 14,
+    "weak_project_signal": 32,
     "existing_site_task_not_development": 1,
-    "employment_vacancy": 10
+    "content_article": 1,
+    "employment_vacancy": 2
   },
-  "hub_rejects": {},
+  "hub_rejects": {
+    "education": 2,
+    "no_project_signal": 121
+  },
   "accepted_classes": {},
   "project_types": {},
   "languages": {},
-  "started_at": "2026-11-18T10:46:02.630637+00:00",
-  "completed_at": "2026-11-18T10:47:01.510650+00:00",
+  "started_at": "2026-11-18T17:34:07.205121+00:00",
+  "completed_at": "2026-11-18T17:35:18.112008+00:00",
   "new_leads": 0,
   "alerts": 0
 }
