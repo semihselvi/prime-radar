@@ -13,30 +13,32 @@ def parse_dt(v):
         return None
 
 def main():
+    """Aggregate buyer-delivery audit without exposing customer messages in CI logs."""
     db = core.db()
-    rows=[]
+    rows = []
     for snap in db.collection(core.COLLECTION).stream():
-        d=snap.to_dict() or {}
-        dt=parse_dt(d.get("v6_notified_at") or d.get("core_notified_at"))
-        if not dt or dt < START:
+        data = snap.to_dict() or {}
+        timestamp = parse_dt(data.get("v6_notified_at") or data.get("core_notified_at"))
+        if timestamp is None or timestamp < START:
             continue
-        rows.append({
-            "lead_id": d.get("lead_id") or snap.id,
-            "author": d.get("author",""),
-            "group": d.get("group",""),
-            "message": str(d.get("message") or d.get("text") or "")[:1200],
-            "url": d.get("url",""),
-            "lead_class": d.get("lead_class",""),
-            "intent_score": d.get("intent_score",0),
-            "language": d.get("language",""),
-            "region": d.get("estimated_region",""),
-            "budget": d.get("estimated_budget",""),
-            "criteria": d.get("important_criteria",[]),
-            "reasons": d.get("lead_reasons",[]),
-            "notified_at": d.get("v6_notified_at") or d.get("core_notified_at"),
-        })
-    rows.sort(key=lambda x: x.get("notified_at",""))
-    print("RECENT_BUYER_AUDIT", json.dumps({"count":len(rows),"rows":rows}, ensure_ascii=False))
+        rows.append((timestamp, data))
+    rows.sort(key=lambda item: item[0])
+
+    from collections import Counter
+    classes = Counter(str(data.get("lead_class") or "unknown") for _time, data in rows)
+    languages = Counter(str(data.get("language") or "unknown") for _time, data in rows)
+    summary = {
+        "count": len(rows),
+        "since": START.isoformat(),
+        "first_notified_at": rows[0][0].isoformat() if rows else None,
+        "last_notified_at": rows[-1][0].isoformat() if rows else None,
+        "class_counts": dict(classes),
+        "language_counts": dict(languages),
+        "missing_source_link": sum(1 for _time, data in rows if not data.get("url")),
+        "details_redacted": True,
+    }
+    print("RECENT_BUYER_AUDIT", json.dumps(summary, ensure_ascii=False))
+
 
 if __name__=="__main__":
     main()
