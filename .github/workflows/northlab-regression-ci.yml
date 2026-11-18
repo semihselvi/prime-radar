@@ -3,7 +3,8 @@ name: NorthLab Radar - Regression Tests (no live scans)
 "on":
   push:
     branches:
-      - repair/northlab-delivery-health-20261118
+      - 'refactor/**'
+      - 'repair/**'
     paths:
       - "main.py"
       - "northlab_sales_radar.py"
