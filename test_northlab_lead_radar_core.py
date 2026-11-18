@@ -6,10 +6,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import northlab_lead_radar_core as core
 
+def is_actionable_buyer(lead):
+    return core.radar.buyer_notification_eligibility(lead)[0]
+
+
 
 class NorthlabLeadRadarCoreTests(unittest.TestCase):
     def test_accepts_explicit_hot_buyer(self):
-        self.assertTrue(core.is_actionable_buyer({
+        self.assertTrue(is_actionable_buyer({
             "market": "north_cyprus",
             "intent_type": "BUYER",
             "lead_class": "HOT BUYER",
@@ -19,7 +23,7 @@ class NorthlabLeadRadarCoreTests(unittest.TestCase):
         }))
 
     def test_accepts_specific_owner_direct_search(self):
-        self.assertTrue(core.is_actionable_buyer({
+        self.assertTrue(is_actionable_buyer({
             "market": "north_cyprus",
             "intent_type": "BUYER",
             "lead_class": "WARM BUYER",
@@ -30,7 +34,7 @@ class NorthlabLeadRadarCoreTests(unittest.TestCase):
         }))
 
     def test_rejects_implicit_property_demand(self):
-        self.assertFalse(core.is_actionable_buyer({
+        self.assertFalse(is_actionable_buyer({
             "market": "north_cyprus",
             "intent_type": "BUYER",
             "lead_class": "WARM BUYER",
@@ -40,7 +44,7 @@ class NorthlabLeadRadarCoreTests(unittest.TestCase):
         }))
 
     def test_rejects_property_research_signal(self):
-        self.assertFalse(core.is_actionable_buyer({
+        self.assertFalse(is_actionable_buyer({
             "market": "north_cyprus",
             "intent_type": "BUYER",
             "lead_class": "WARM BUYER",
@@ -50,7 +54,7 @@ class NorthlabLeadRadarCoreTests(unittest.TestCase):
         }))
 
     def test_rejects_tenant(self):
-        self.assertFalse(core.is_actionable_buyer({
+        self.assertFalse(is_actionable_buyer({
             "market": "north_cyprus",
             "intent_type": "TENANT",
             "lead_class": "HOT TENANT",
@@ -58,13 +62,13 @@ class NorthlabLeadRadarCoreTests(unittest.TestCase):
         }))
 
     def test_rejects_relocation_and_investor_chatter(self):
-        self.assertFalse(core.is_actionable_buyer({
+        self.assertFalse(is_actionable_buyer({
             "market": "north_cyprus",
             "intent_type": "RELOCATION",
             "lead_class": "RELOCATION",
             "message": "Thinking about moving to North Cyprus.",
         }))
-        self.assertFalse(core.is_actionable_buyer({
+        self.assertFalse(is_actionable_buyer({
             "market": "north_cyprus",
             "intent_type": "INVESTOR",
             "lead_class": "INVESTOR",
@@ -72,7 +76,7 @@ class NorthlabLeadRadarCoreTests(unittest.TestCase):
         }))
 
     def test_rejects_car_purchase_even_if_upstream_labels_buyer(self):
-        self.assertFalse(core.is_actionable_buyer({
+        self.assertFalse(is_actionable_buyer({
             "market": "north_cyprus",
             "intent_type": "BUYER",
             "lead_class": "HOT BUYER",
@@ -83,7 +87,7 @@ class NorthlabLeadRadarCoreTests(unittest.TestCase):
         }))
 
     def test_rejects_buyer_label_if_message_is_rental(self):
-        self.assertFalse(core.is_actionable_buyer({
+        self.assertFalse(is_actionable_buyer({
             "market": "north_cyprus",
             "intent_type": "BUYER",
             "lead_class": "HOT BUYER",
@@ -95,7 +99,7 @@ class NorthlabLeadRadarCoreTests(unittest.TestCase):
 
 class PrimeBuyerNotificationRecoveryTests(unittest.TestCase):
     def test_project_only_property_name_passes_final_gate(self):
-        self.assertTrue(core.is_actionable_buyer({
+        self.assertTrue(is_actionable_buyer({
             "market": "north_cyprus",
             "intent_type": "BUYER",
             "lead_class": "HOT BUYER",
@@ -192,7 +196,7 @@ class PrimeBuyerCanonicalGateTests(unittest.TestCase):
         eligible, reason = core.radar.buyer_notification_eligibility(self.uncertain)
         self.assertFalse(eligible)
         self.assertEqual(reason, "buyer_needs_review")
-        self.assertFalse(core.is_actionable_buyer(self.uncertain))
+        self.assertFalse(is_actionable_buyer(self.uncertain))
         with patch.object(core.radar.core, "telegram") as telegram:
             self.assertFalse(core.radar.notify_lead(self.uncertain))
             telegram.assert_not_called()
@@ -201,7 +205,7 @@ class PrimeBuyerCanonicalGateTests(unittest.TestCase):
         stronger = dict(self.uncertain, intent_score=80, specificity=3)
         eligible, reason = core.radar.buyer_notification_eligibility(stronger)
         self.assertTrue(eligible, reason)
-        self.assertTrue(core.is_actionable_buyer(stronger))
+        self.assertTrue(is_actionable_buyer(stronger))
 
     def test_review_queue_is_idempotent(self):
         from datetime import datetime, timezone
@@ -317,7 +321,7 @@ class PrimeAtomicNotificationLedgerTests(unittest.TestCase):
             "lead_reasons": ["explicit_purchase_intent", "region_present"],
             "specificity": 2,
         }
-        self.assertTrue(core.is_actionable_buyer(lead))
+        self.assertTrue(is_actionable_buyer(lead))
 
 
 if __name__ == "__main__":
