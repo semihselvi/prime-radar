@@ -601,8 +601,10 @@ class BroadIntentTests(unittest.TestCase):
 
 
     def test_serper_credit_exhaustion_disables_rest_of_run(self):
-        module = v6.radar.v53
-        module._SERPER_DISABLED_FOR_RUN = False
+        provider = v6._paid_web_search
+        previous = (provider.exa_disabled, provider.serper_disabled)
+        provider.exa_disabled = True
+        provider.serper_disabled = False
 
         class FakeResponse:
             status_code = 400
@@ -611,28 +613,26 @@ class BroadIntentTests(unittest.TestCase):
                 return {"message": "Not enough credits", "statusCode": 400}
 
         calls = {"n": 0}
-
         def fake_post(*args, **kwargs):
             calls["n"] += 1
             return FakeResponse()
 
         try:
-            with patch.dict("os.environ", {"SERPER_API_KEY": "test-key"}):
-                with patch.object(module.core.requests, "post", side_effect=fake_post):
-                    self.assertEqual(module._serper_search("first query"), [])
-                    self.assertEqual(module._serper_search("second query"), [])
-            self.assertTrue(module._SERPER_DISABLED_FOR_RUN)
+            with patch.dict("os.environ", {"EXA_API_KEY": "", "SERPER_API_KEY": "test-key"}):
+                with patch("prime_web_search.requests.post", side_effect=fake_post):
+                    self.assertEqual(provider.search("first query"), [])
+                    self.assertEqual(provider.search("second query"), [])
+            self.assertTrue(provider.serper_disabled)
             self.assertEqual(calls["n"], 1)
         finally:
-            module._SERPER_DISABLED_FOR_RUN = False
+            provider.exa_disabled, provider.serper_disabled = previous
 
     def test_search_debug_reports_disabled_paid_search_once(self):
-        module = v6.radar.v53
-        old_exa = module._EXA_DISABLED_FOR_RUN
-        old_serper = module._SERPER_DISABLED_FOR_RUN
+        provider = v6._paid_web_search
+        previous = (provider.exa_disabled, provider.serper_disabled)
         try:
-            module._EXA_DISABLED_FOR_RUN = True
-            module._SERPER_DISABLED_FOR_RUN = True
+            provider.exa_disabled = True
+            provider.serper_disabled = True
             with patch.object(v6, "_existing_search", return_value=[]), patch.object(v6, "_bing_rss_search", return_value=[]):
                 v6.DEBUG["web_provider_errors"].clear()
                 v6.search_debug("North Cyprus buyer")
@@ -640,8 +640,7 @@ class BroadIntentTests(unittest.TestCase):
             self.assertEqual(v6.DEBUG["web_provider_errors"]["paid_search_disabled_for_run"], 1)
             self.assertEqual(v6.DEBUG["web_provider_errors"].get("exa_serper_empty_or_quota", 0), 0)
         finally:
-            module._EXA_DISABLED_FOR_RUN = old_exa
-            module._SERPER_DISABLED_FOR_RUN = old_serper
+            provider.exa_disabled, provider.serper_disabled = previous
             v6.DEBUG["web_provider_errors"].clear()
 
 
