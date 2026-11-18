@@ -7,6 +7,10 @@ on:
     paths:
       - 'nc_v6_broad_radar.py'
       - 'northlab_lead_radar_core.py'
+      - 'prime_buyer_policy.py'
+      - 'prime_web_search.py'
+      - 'test_nc_v6_broad_radar.py'
+      - 'test_prime_runtime_independence.py'
       - 'test_northlab_lead_radar_core.py'
       - '.github/workflows/prime-buyer-regression.yml'
   pull_request:
