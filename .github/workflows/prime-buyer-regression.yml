@@ -14,6 +14,9 @@ on:
     paths:
       - "main.py"
       - "nc_v6_broad_radar.py"
+      - "prime_buyer_policy.py"
+      - "prime_web_search.py"
+      - "test_prime_runtime_independence.py"
       - "public_web_buyer_radar.py"
       - "northlab_lead_radar_core.py"
       - "test_nc_v6_broad_radar.py"
@@ -41,7 +44,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Compile modified runtime
-        run: python -m py_compile main.py nc_v6_broad_radar.py northlab_lead_radar_core.py public_web_buyer_radar.py
+        run: python -m py_compile main.py nc_v6_broad_radar.py northlab_lead_radar_core.py public_web_buyer_radar.py prime_buyer_policy.py prime_web_search.py test_prime_runtime_independence.py
       - name: Unit and missed-lead regression suite
         run: |
-          python -m unittest -q test_nc_v6_broad_radar.py test_northlab_lead_radar_core.py test_prime_source_bootstrap.py test_public_web_buyer_radar.py test_audit_recent_buyers.py
+          python -m unittest -q test_nc_v6_broad_radar.py test_northlab_lead_radar_core.py test_prime_source_bootstrap.py test_public_web_buyer_radar.py test_audit_recent_buyers.py test_prime_runtime_independence.py
