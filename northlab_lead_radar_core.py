@@ -4,7 +4,7 @@ import asyncio
 import hashlib
 import os
 import re
-from google.api_core.exceptions import AlreadyExists
+from google.api_core.exceptions import AlreadyExists, Conflict
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -91,7 +91,7 @@ def _deliver_once(db, lead: dict[str, Any], prefix: str, now: datetime) -> str:
     if _already_notified_public_link(db, lead):
         try:
             record.create({"status": "legacy_delivered", "last_checked_at": now.isoformat()})
-        except AlreadyExists:
+        except (AlreadyExists, Conflict):
             pass
         return "duplicate"
 
@@ -101,7 +101,7 @@ def _deliver_once(db, lead: dict[str, Any], prefix: str, now: datetime) -> str:
             "claimed_at": now.isoformat(),
             "source_record_id": str(lead.get("lead_id") or ""),
         })
-    except AlreadyExists:
+    except (AlreadyExists, Conflict):
         return "duplicate"
 
     try:
