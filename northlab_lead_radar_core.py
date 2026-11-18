@@ -50,7 +50,7 @@ def _notification_key(lead: dict[str, Any]) -> str:
     """
     url = str(lead.get("url") or "").strip()
     match = re.search(
-        r"(?:https?://)?(?:www\\.)?t\\.me/(?:s/)?([A-Za-z0-9_]+)/(\\d+)(?:[/?#]|$)",
+        r"(?:https?://)?(?:www\.)?t\.me/(?:s/)?([A-Za-z0-9_]+)/(\d+)(?:[/?#]|$)",
         url,
         re.I,
     )
