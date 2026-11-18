@@ -12,45 +12,29 @@ VERSION = "1.2-recall-first-wide-net"
 
 
 def is_actionable_buyer(lead: dict[str, Any]) -> bool:
-    """Final production gate: notify only buyers with concrete purchase evidence.
+    """Use the exact same delivery policy as the Telegram notification boundary."""
+    eligible, _reason = radar.buyer_notification_eligibility(lead)
+    return eligible
 
-    Upstream recall intentionally stays broad. This firewall prevents weak
-    research/implicit housing demand from being promoted to Telegram alerts.
-    """
-    if str(lead.get("market") or "") != "north_cyprus":
+
+def _record_review_pending(db, lead: dict[str, Any], reason: str, now: datetime) -> bool:
+    """Persist uncertain buyers for human verification without sending an alert."""
+    lead_id = str(lead.get("lead_id") or "")
+    if not lead_id:
         return False
-
-    if str(lead.get("intent_type") or "").upper() != "BUYER":
+    ref = db.collection(radar.core.COLLECTION).document(lead_id)
+    snap = ref.get()
+    previous = (snap.to_dict() or {}) if snap.exists else {}
+    if previous.get("buyer_review_status") in {"dismissed", "approved", "contacted", "completed"}:
         return False
-
-    if str(lead.get("lead_class") or "") not in {"HOT BUYER", "WARM BUYER"}:
+    if previous.get("buyer_review_status") == "pending" and previous.get("buyer_review_reason") == reason:
         return False
-
-    text = str(lead.get("message") or lead.get("text") or "")
-    if radar.RENT_DEMAND_RE.search(text):
-        return False
-    if radar._hard_reject(text, str(lead.get("author") or "")):
-        return False
-    if not (radar.PROPERTY_RE.search(text) or radar.NC_PROJECT_RE.search(text)):
-        return False
-
-    reasons = {str(x) for x in (lead.get("lead_reasons") or [])}
-    strong_reasons = {
-        "explicit_purchase_intent",
-        "agent_client_purchase_request",
-        "purchase_budget_demand",
-        "title_or_resale_purchase_demand",
-        "investment_property_demand",
-    }
-    if reasons & strong_reasons:
-        return True
-
-    # "Ищу кто продает от собственника 2+1 ..." is genuine buyer demand even
-    # without a literal buy verb, but only when the upstream signal is specific.
-    if "owner_direct_buyer_preference" in reasons and int(lead.get("specificity") or 0) >= 1:
-        return True
-
-    return False
+    ref.set({
+        "buyer_review_status": "pending",
+        "buyer_review_reason": reason,
+        "buyer_review_at": now.isoformat(),
+    }, merge=True)
+    return True
 
 
 def recover_recent_unnotified(db, now: datetime, max_send: int = 3) -> dict[str, int]:
@@ -59,7 +43,7 @@ def recover_recent_unnotified(db, now: datetime, max_send: int = 3) -> dict[str,
     Already-notified rows are never resent. Reclassify against current rules
     rather than relying on stale labels. This does NOT scrape old rejected posts.
     """
-    stats = {"scanned": 0, "eligible": 0, "notified": 0, "errors": 0}
+    stats = {"scanned": 0, "eligible": 0, "notified": 0, "review_saved": 0, "errors": 0}
     if max_send <= 0:
         return stats
     cutoff = (now - timedelta(days=14)).isoformat()
@@ -88,7 +72,11 @@ def recover_recent_unnotified(db, now: datetime, max_send: int = 3) -> dict[str,
             if signal is None:
                 continue
             candidate = {**lead, **signal, "lead_id": snap.id}
-            if not is_actionable_buyer(candidate):
+            eligible, reason = radar.buyer_notification_eligibility(candidate)
+            if not eligible:
+                if reason == "buyer_needs_review":
+                    if _record_review_pending(db, candidate, reason, now):
+                        stats["review_saved"] += 1
                 continue
             stats["eligible"] += 1
             if radar.notify_lead(candidate, "RECOVERED"):
@@ -131,7 +119,15 @@ async def scan_once() -> dict[str, Any]:
     if str(result.get("status") or "").startswith("skipped"):
         raise RuntimeError("PRIME_BUYER_TELEGRAM_SCAN_UNAVAILABLE: " + str(result.get("status")))
     raw = list(result.get("new_leads") or [])
-    buyers = [lead for lead in raw if is_actionable_buyer(lead)]
+    buyers = []
+    review_saved = 0
+    for lead in raw:
+        eligible, reason = radar.buyer_notification_eligibility(lead)
+        if eligible:
+            buyers.append(lead)
+        elif reason == "buyer_needs_review":
+            if _record_review_pending(db, lead, reason, started):
+                review_saved += 1
 
     notified = 0
     for lead in buyers:
@@ -148,6 +144,7 @@ async def scan_once() -> dict[str, Any]:
         "messages": result.get("messages", 0),
         "raw_new": len(raw),
         "buyers": len(buyers),
+        "review_saved": review_saved,
         "notified": notified,
         "group_discovery_joined": result.get("group_discovery_joined", 0),
         "group_discovery_joined_samples": result.get("group_discovery_joined_samples", []),
