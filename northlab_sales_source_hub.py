@@ -378,7 +378,11 @@ def process_rows(
             continue
         seen.add(sig)
 
-        signal, reason = classify_fn(str(row.get("text") or ""))
+        signal, reason = classify_fn(
+            str(row.get("text") or ""),
+            author=str(row.get("author") or ""),
+            url=str(row.get("url") or ""),
+        )
         if signal is None:
             debug["hub_rejects"][reason] += 1
             continue
