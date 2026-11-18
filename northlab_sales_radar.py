@@ -16,6 +16,7 @@ import requests
 
 import main as core
 import northlab_sales_source_hub as source_hub
+from northlab_sales_qualification import qualify_for_sales_alert
 
 VERSION = "2.4-content-and-promo-guard"
 COLLECTION = "northlab_sales_project_leads"
@@ -636,13 +637,30 @@ def _mark_retry_pending(db_client, lead: dict[str, Any], now: datetime) -> None:
 
 
 def deliver_new_leads(db_client, leads: list[dict[str, Any]], now: datetime, debug: dict[str, Any]) -> int:
-    """Bounded, retryable delivery: only a confirmed Telegram response marks a lead notified."""
+    """Discover broadly; only evidenced, attributable buyer demand reaches Telegram.
+
+    All non-ready records remain in Firestore with an explicit reason and
+    are never marked as notified. This separates research from outreach.
+    """
     delivered = 0
     attempts = 0
+    review = 0
+    rejected = 0
     for lead in leads:
-        if attempts >= MAX_ALERTS:
-            break
         if lead.get("lead_class") == "WATCH":
+            continue
+        state, reason = qualify_for_sales_alert(lead)
+        if state != "ready":
+            if state == "review":
+                review += 1
+            else:
+                rejected += 1
+            db_client.collection(COLLECTION).document(lead["lead_id"]).set(
+                {"qualification_status": state, "qualification_reason": reason,
+                 "last_qualification_at": now.isoformat()}, merge=True,
+            )
+            continue
+        if attempts >= MAX_ALERTS:
             continue
         attempts += 1
         if _notify(lead, "NEW"):
@@ -653,8 +671,9 @@ def deliver_new_leads(db_client, leads: list[dict[str, Any]], now: datetime, deb
             debug["errors"].append("telegram_delivery_failed")
     debug["delivery_attempts"] = attempts
     debug["delivery_failures"] = attempts - delivered
+    debug["qualification_review"] = review
+    debug["qualification_rejected"] = rejected
     return delivered
-
 
 async def scan_telegram(db_client, now: datetime, debug: dict[str, Any]) -> list[dict[str, Any]]:
     if not core.TELEGRAM_API_ID or not core.TELEGRAM_API_HASH or not core.TELEGRAM_SESSION.exists():
