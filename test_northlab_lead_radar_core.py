@@ -1,5 +1,7 @@
 import os
 import unittest
+from datetime import datetime, timezone
+from google.api_core.exceptions import AlreadyExists
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import northlab_lead_radar_core as core
@@ -243,6 +245,79 @@ class PrimeBuyerReviewScanTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(summary["notified"], 0)
         notify.assert_not_called()
 
+
+
+class PrimeAtomicNotificationLedgerTests(unittest.TestCase):
+    def setUp(self):
+        self.now = datetime(2026, 11, 18, tzinfo=timezone.utc)
+        self.lead = {
+            "lead_id": "source-a",
+            "market": "north_cyprus", "intent_type": "BUYER",
+            "lead_class": "HOT BUYER",
+            "author": "@Chrkibris1",
+            "group": "СЕВЕРНЫЙ КИПР | НЕДВИЖИМОСТЬ",
+            "url": "https://t.me/cyprusprop/984807",
+            "message": "Куплю 2+1 в Grand Sapphire напрямую от собственника.",
+            "lead_reasons": ["explicit_purchase_intent", "owner_direct_buyer_preference"],
+            "specificity": 2,
+        }
+
+    def test_new_and_recovered_share_same_public_message_key(self):
+        same_message = dict(self.lead, lead_id="source-b",
+                            url="https://t.me/CYPRUSPROP/984807?single",
+                            author="Another source attribution")
+        self.assertEqual(core._notification_key(self.lead),
+                         core._notification_key(same_message))
+        different_message = dict(self.lead, url="https://t.me/cyprusprop/984808")
+        self.assertNotEqual(core._notification_key(self.lead),
+                            core._notification_key(different_message))
+
+    def test_claim_prevents_same_message_notification_twice(self):
+        db = MagicMock()
+        record = db.collection.return_value.document.return_value
+        record.create.side_effect = [None, AlreadyExists("same message")]
+        with patch.object(core, "_already_notified_public_link", return_value=False), \
+             patch.object(core.radar, "notify_lead", return_value=True) as send, \
+             patch.object(core, "_mark_notified"):
+            first = core._deliver_once(db, self.lead, "NEW", self.now)
+            second = core._deliver_once(db, dict(self.lead, lead_id="source-b"),
+                                        "RECOVERED", self.now)
+        self.assertEqual((first, second), ("delivered", "duplicate"))
+        self.assertEqual(send.call_count, 1)
+
+    def test_preexisting_notification_in_legacy_collection_is_suppressed(self):
+        db = MagicMock()
+        snap = MagicMock()
+        snap.to_dict.return_value = {"v6_notified_at": self.now.isoformat()}
+        db.collection.return_value.where.return_value.limit.return_value.stream.return_value = [snap]
+        self.assertTrue(core._already_notified_public_link(db, self.lead))
+        with patch.object(core.radar, "notify_lead") as send:
+            self.assertEqual(core._deliver_once(db, self.lead, "RECOVERED", self.now),
+                             "duplicate")
+        send.assert_not_called()
+
+    def test_uncertain_api_result_never_auto_retries(self):
+        db = MagicMock()
+        doc = db.collection.return_value.document.return_value
+        with patch.object(core, "_already_notified_public_link", return_value=False), \
+             patch.object(core.radar, "notify_lead", return_value=False) as send, \
+             patch.object(core, "_mark_notified") as mark:
+            result = core._deliver_once(db, self.lead, "RECOVERED", self.now)
+        self.assertEqual(result, "uncertain")
+        self.assertEqual(send.call_count, 1)
+        mark.assert_not_called()
+        self.assertEqual(doc.set.call_args.args[0]["status"], "uncertain")
+
+    def test_actual_rukhshona_buyer_intent_is_preserved(self):
+        lead = {
+            "market": "north_cyprus", "intent_type": "BUYER",
+            "lead_class": "HOT BUYER",
+            "author": "Rukhshona Inomjonova",
+            "message": "Здравствуйте! Куплю готовую квартиру 2+1 или 3+1 в рассрочку. Рассматриваю варианты в районах Yeniboğaziçi, Фамагуста или Лонг бич.",
+            "lead_reasons": ["explicit_purchase_intent", "region_present"],
+            "specificity": 2,
+        }
+        self.assertTrue(core.is_actionable_buyer(lead))
 
 
 if __name__ == "__main__":
