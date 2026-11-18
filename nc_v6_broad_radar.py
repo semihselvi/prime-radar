@@ -11,27 +11,21 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-import nc_v5_batch_quality_guard as batch_guard
+import main as core
+import prime_buyer_policy as buyer_rules
 from telethon import functions as tg_functions
 
 import telegram_public_graph as tpg
 import adaptive_radar_learning as learning
 import crawl4ai_radar_adapter as crawl4ai_adapter
 
-radar = batch_guard.radar
-core = radar.core
-v5 = radar.v5
-
-VERSION = "6.39-agent-content-tightening"
+VERSION = "7.0-independent-buyer-runtime"
 
 BLOCKED_BUYER_AUTHORS = {
     "batuhanarslann7",
     "gprealestate",
     "gp real estate | северный кипр",
 }
-
-for _module in (radar, radar.v53, radar.v53.v52, radar.v53.gate, v5):
-    _module.VERSION = VERSION
 
 # ---------------------------------------------------------------------------
 # Geography / source scope
@@ -527,7 +521,7 @@ SEA_RE = re.compile(r"(?:near\s+(?:the\s+)?sea|sea\s+view|denize\s+yak[ıi]n|м�
 FURNISHED_RE = re.compile(r"(?:furnished|e[şs]yal[ıi]|меблирован\w*|с\s+мебелью)", re.I)
 
 # Web search expansion: broad intent families instead of purchase-only wording.
-v5.EXA_QUERIES = [
+WEB_SEARCH_QUERIES = [
     ("North Cyprus buying apartment villa family area", None),
     ("North Cyprus property prices budget 100000 150000 200000 pounds what can I buy", None),
     ("North Cyprus investment property payment plan buy apartment", None),
@@ -551,13 +545,6 @@ v5.EXA_QUERIES = [
     ('site:facebook.com/groups "Kuzey Kıbrıs" ("satın almak" OR "satılık daire" OR "yatırım için ev")', None),
     ('site:facebook.com/groups "Северный Кипр" ("хочу купить" OR "куплю квартиру" OR "инвестиции недвижимость")', None),
 ]
-
-# Expand the legacy North-Cyprus regex used by the web path.
-v5.NORTH_RE = re.compile(
-    rf"(?:{v5.NORTH_RE.pattern}|{NC_GEO_RE.pattern}|{NC_GEO_RU_RE.pattern})",
-    re.I,
-)
-
 
 def _norm(text: str) -> str:
     return " ".join(str(text or "").casefold().replace("ё", "е").split())
@@ -731,9 +718,9 @@ def _hard_reject(text: str, author: str = "") -> str:
     clean_author = str(author or "").strip().lstrip("@").casefold()
     if clean_author in BLOCKED_BUYER_AUTHORS:
         return "blocked_buyer_author"
-    if radar.TG_BOT_AUTHOR_RE.search(author or ""):
+    if buyer_rules.TG_BOT_AUTHOR_RE.search(author or ""):
         return "bot_author"
-    if batch_guard.is_nonproperty_goods_request(text):
+    if buyer_rules.is_nonproperty_goods_request(text):
         return "nonproperty_goods"
     if NONPROPERTY_OBJECT_REQUEST_RE.search(text):
         return "nonproperty_goods"
@@ -772,9 +759,9 @@ def _hard_reject(text: str, author: str = "") -> str:
         return "supply_or_agent"
     if SELLER_DIRECTION_RE.search(text) and PROPERTY_RE.search(text):
         return "supply_or_agent"
-    if radar.TG_SERVICE_REQUEST_RE.search(text) or SERVICE_PROVIDER_REQUEST_RE.search(text):
+    if buyer_rules.TG_SERVICE_REQUEST_RE.search(text) or SERVICE_PROVIDER_REQUEST_RE.search(text):
         return "service_request"
-    if radar.TG_STRONG_SUPPLY_RE.search(text) or SUPPLY_STRONG_RE.search(text):
+    if buyer_rules.TG_STRONG_SUPPLY_RE.search(text) or SUPPLY_STRONG_RE.search(text):
         return "supply_or_agent"
     return ""
 
@@ -1784,7 +1771,7 @@ def evaluate_review_candidate(candidate: dict[str, Any]) -> tuple[dict[str, Any]
         return None, "rent_demand"
     if SELLER_DIRECTION_RE.search(text):
         return None, "seller_direction"
-    if radar.TG_STRONG_SUPPLY_RE.search(text) or SUPPLY_STRONG_RE.search(text):
+    if buyer_rules.TG_STRONG_SUPPLY_RE.search(text) or SUPPLY_STRONG_RE.search(text):
         return None, "supply_listing"
     if POST_PURCHASE_OR_INFO_RE.search(text):
         return None, "post_purchase_or_info"
@@ -3027,7 +3014,6 @@ async def broad_telegram_scan(db_client, started):
 # Broad web path
 # ---------------------------------------------------------------------------
 
-_existing_web_classifier = v5.classify_web
 _existing_search = core.exa_search
 
 
@@ -3080,14 +3066,13 @@ def _bing_rss_search(query: str, include_domains: list[str] | None = None) -> li
 
 
 def search_debug(query: str, include_domains: list[str] | None = None):
-    rows = _existing_search(query, include_domains)
+    try:
+        rows = _existing_search(query, include_domains)
+    except Exception as exc:
+        DEBUG["web_provider_errors"][f"primary_search_{type(exc).__name__}"] += 1
+        rows = []
     if not rows:
-        exa_disabled = bool(getattr(radar.v53, "_EXA_DISABLED_FOR_RUN", False))
-        serper_disabled = bool(getattr(radar.v53, "_SERPER_DISABLED_FOR_RUN", False))
-        if exa_disabled and serper_disabled:
-            DEBUG["web_provider_errors"]["paid_search_disabled_for_run"] = 1
-        else:
-            DEBUG["web_provider_errors"]["exa_serper_empty_or_quota"] += 1
+        DEBUG["web_provider_errors"]["primary_search_empty_or_unavailable"] += 1
         rows = _bing_rss_search(query, include_domains)
 
     strong_rows = []
@@ -3132,27 +3117,13 @@ def search_debug(query: str, include_domains: list[str] | None = None):
     return filtered
 
 
-core.exa_search = search_debug
-
 
 def broad_web_classifier(item: dict[str, Any]):
-    # Preserve strong existing buyer matches first.
-    existing = _existing_web_classifier(item)
-    if existing is not None:
-        existing["intent_type"] = "BUYER"
-        existing["lead_class"] = existing.get("lead_class") or ("HOT BUYER" if existing.get("classification") == "HOT" else "WARM BUYER")
-        existing["language"] = detect_language(f"{item.get('title','')} {item.get('text','')}")
-        existing["estimated_region"] = extract_region(f"{item.get('title','')} {item.get('text','')}")
-        existing["estimated_budget"] = extract_budget(f"{item.get('title','')} {item.get('text','')}")
-        existing["important_criteria"] = criteria(f"{item.get('title','')} {item.get('text','')}")
-        DEBUG["web_accepted"] += 1
-        return existing
-
     url = str(item.get("url") or "")
     title = str(item.get("title") or "")
     text = str(item.get("text") or "")
     blob = f"{title} {text[:3200]}"
-    if radar._web_listing_url(url) or radar._WEB_LISTING_RE.search(blob):
+    if buyer_rules.web_listing_url(url) or buyer_rules.WEB_LISTING_RE.search(blob):
         DEBUG["web_reject_reasons"]["listing"] += 1
         return None
     if SUPPLY_STRONG_RE.search(blob) and not (BUY_RE.search(blob) or RENT_DEMAND_RE.search(blob) or DEMAND_RE.search(blob)):
@@ -3179,15 +3150,10 @@ def broad_web_classifier(item: dict[str, Any]):
     return out
 
 
-v5.classify_web = broad_web_classifier
-core.telegram_buyer_scan = broad_telegram_scan
-
 
 # ---------------------------------------------------------------------------
 # PURCHASE-ONLY OUTBOUND FIREWALL
 # ---------------------------------------------------------------------------
-
-_original_core_telegram = core.telegram
 
 
 def _buyer_only_message_allowed(message: str) -> bool:
@@ -3224,10 +3190,8 @@ def buyer_only_telegram(message: str):
     if not _buyer_only_message_allowed(message):
         print("BUYER_ONLY_OUTBOUND_BLOCKED", _clip(message, 220).replace("\n", " | ") if "_clip" in globals() else str(message or "")[:220].replace("\n", " | "))
         return None
-    return _original_core_telegram(message)
+    return core.telegram(message)
 
-
-core.telegram = buyer_only_telegram
 
 
 # ---------------------------------------------------------------------------
@@ -3324,7 +3288,7 @@ def notify_lead(lead: dict[str, Any], prefix: str = "NEW") -> bool:
         f"{_clip(lead.get('message') or lead.get('text') or '', 900)}\n\n"
         f"🔗 {lead.get('url','') or 'Doğrudan link yok'}"
     )
-    delivered = core.telegram(msg[:3900])
+    delivered = buyer_only_telegram(msg[:3900])
     if delivered is not True:
         print("BUYER_NOTIFY_DELIVERY_FAILED", {"lead_id": str(lead.get("lead_id") or "")[:70]})
         return False
@@ -3334,13 +3298,6 @@ def notify_lead(lead: dict[str, Any], prefix: str = "NEW") -> bool:
 def notify_web(lead: dict[str, Any]) -> None:
     notify_lead(lead, "WEB")
 
-
-v5.notify_telegram_lead = notify_lead
-v5.notify_web_lead = notify_web
-
-# Old backfill is buyer-only. Do not reclassify historical rows with stale V5
-# semantics; fresh V6 scans will repopulate all intent classes safely.
-v5.backfill_unnotified_telegram = lambda db_client, started: []
 
 
 def _serializable_debug() -> dict[str, Any]:
@@ -3438,7 +3395,9 @@ def save_and_notify_debug() -> None:
 
 
 def run() -> None:
-    radar.main()
+    """Standalone entry point uses the canonical Prime buyer lifecycle, not V5."""
+    from northlab_lead_radar_core import main as buyer_main
+    buyer_main()
     save_and_notify_debug()
 
 
