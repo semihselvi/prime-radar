@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import os
+import re
+from google.api_core.exceptions import AlreadyExists
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -9,7 +12,8 @@ from typing import Any
 import nc_v6_broad_radar as radar
 
 
-VERSION = "1.2-recall-first-wide-net"
+VERSION = "1.3-atomic-buyer-delivery"
+DELIVERY_LEDGER_COLLECTION = "prime_buyer_notification_deliveries"
 
 
 def is_actionable_buyer(lead: dict[str, Any]) -> bool:
@@ -38,13 +42,91 @@ def _record_review_pending(db, lead: dict[str, Any], reason: str, now: datetime)
     return True
 
 
+def _notification_key(lead: dict[str, Any]) -> str:
+    """Stable public-message identity shared by NEW and RECOVERED paths.
+
+    Original Firestore lead ids depend on discovery source and are not unique
+    per Telegram message; this key is unique per public message and author.
+    """
+    url = str(lead.get("url") or "").strip()
+    match = re.search(
+        r"(?:https?://)?(?:www\\.)?t\\.me/(?:s/)?([A-Za-z0-9_]+)/(\\d+)(?:[/?#]|$)",
+        url,
+        re.I,
+    )
+    if match:
+        raw = f"telegram:{match.group(1).casefold()}:{int(match.group(2))}"
+    else:
+        author = str(lead.get("author") or "").strip().casefold()
+        message = " ".join(str(lead.get("message") or lead.get("text") or "").casefold().replace("ё", "е").split())
+        raw = f"telegram-content:{author}:{message}"
+    return hashlib.sha256(raw.encode("utf-8", "ignore")).hexdigest()
+
+
+def _already_notified_public_link(db, lead: dict[str, Any]) -> bool:
+    """Honor pre-ledger notifications when the same public URL was stored twice."""
+    url = str(lead.get("url") or "").strip()
+    if not url:
+        return False
+    matching = db.collection(radar.core.COLLECTION).where("url", "==", url).limit(30).stream()
+    for snapshot in matching:
+        old = snapshot.to_dict() or {}
+        if any(old.get(field) for field in
+               ("v5_notified_at", "v6_notified_at", "core_notified_at")):
+            return True
+    return False
+
+
+def _deliver_once(db, lead: dict[str, Any], prefix: str, now: datetime) -> str:
+    """At-most-once automatic attempt per public Telegram message.
+
+    Firestore document.create is an atomic claim. A timed-out send is
+    ambiguous, so it stays 'uncertain' for manual reconciliation rather than
+    being automatically retried and risking a second message. Telegram's
+    sendMessage API does not offer an idempotency key.
+    Returns delivered|duplicate|uncertain.
+    """
+    key = _notification_key(lead)
+    record = db.collection(DELIVERY_LEDGER_COLLECTION).document(key)
+    if _already_notified_public_link(db, lead):
+        try:
+            record.create({"status": "legacy_delivered", "last_checked_at": now.isoformat()})
+        except AlreadyExists:
+            pass
+        return "duplicate"
+
+    try:
+        record.create({
+            "status": "claimed",
+            "claimed_at": now.isoformat(),
+            "source_record_id": str(lead.get("lead_id") or ""),
+        })
+    except AlreadyExists:
+        return "duplicate"
+
+    try:
+        delivered = radar.notify_lead(lead, prefix)
+    except Exception as exc:
+        # Never retry an uncertain Telegram send automatically.
+        record.set({"status": "uncertain", "last_error_type": type(exc).__name__,
+                    "last_attempt_at": now.isoformat()}, merge=True)
+        return "uncertain"
+    if not delivered:
+        record.set({"status": "uncertain", "last_attempt_at": now.isoformat()}, merge=True)
+        return "uncertain"
+
+    record.set({"status": "delivered", "notified_at": now.isoformat()}, merge=True)
+    _mark_notified(db, lead, now)
+    return "delivered"
+
+
 def recover_recent_unnotified(db, now: datetime, max_send: int = 3) -> dict[str, int]:
     """Bounded 14-day replay of accepted but never notified Telegram leads.
 
     Already-notified rows are never resent. Reclassify against current rules
     rather than relying on stale labels. This does NOT scrape old rejected posts.
     """
-    stats = {"scanned": 0, "eligible": 0, "notified": 0, "review_saved": 0, "errors": 0}
+    stats = {"scanned": 0, "eligible": 0, "notified": 0, "review_saved": 0, "duplicate": 0, "uncertain": 0, "errors": 0}
     if max_send <= 0:
         return stats
     cutoff = (now - timedelta(days=14)).isoformat()
@@ -80,9 +162,13 @@ def recover_recent_unnotified(db, now: datetime, max_send: int = 3) -> dict[str,
                         stats["review_saved"] += 1
                 continue
             stats["eligible"] += 1
-            if radar.notify_lead(candidate, "RECOVERED"):
-                _mark_notified(db, candidate, now)
+            delivery = _deliver_once(db, candidate, "RECOVERED", now)
+            if delivery == "delivered":
                 stats["notified"] += 1
+            elif delivery == "duplicate":
+                stats["duplicate"] += 1
+            else:
+                stats["uncertain"] += 1
     except Exception as exc:
         stats["errors"] += 1
         print("PRIME_BUYER_RECOVERY_ERROR", type(exc).__name__, str(exc)[:300])
@@ -152,10 +238,16 @@ async def _scan_once_with_policy() -> dict[str, Any]:
                 review_saved += 1
 
     notified = 0
+    duplicate = 0
+    uncertain = 0
     for lead in buyers:
-        if radar.notify_lead(lead, "NEW"):
-            _mark_notified(db, lead, started)
+        delivery = _deliver_once(db, lead, "NEW", started)
+        if delivery == "delivered":
             notified += 1
+        elif delivery == "duplicate":
+            duplicate += 1
+        else:
+            uncertain += 1
 
     recovery = recover_recent_unnotified(db, started)
     summary = {
@@ -168,6 +260,8 @@ async def _scan_once_with_policy() -> dict[str, Any]:
         "buyers": len(buyers),
         "review_saved": review_saved,
         "notified": notified,
+        "duplicate_suppressed": duplicate,
+        "delivery_uncertain": uncertain,
         "group_discovery_joined": result.get("group_discovery_joined", 0),
         "group_discovery_joined_samples": result.get("group_discovery_joined_samples", []),
         "group_discovery_found": result.get("group_discovery_found", 0),
