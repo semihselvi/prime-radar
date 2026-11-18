@@ -578,7 +578,7 @@ def _lead_id(source: str, url: str, author: str, text: str) -> str:
     return hashlib.sha256(raw.encode("utf-8", "ignore")).hexdigest()
 
 
-def _notify(lead: dict[str, Any], prefix: str) -> None:
+def _notify(lead: dict[str, Any], prefix: str) -> bool:
     klass = str(lead.get("lead_class") or "WATCH")
     emoji = "🔥" if klass == "HOT PROJECT" else "🤝" if klass == "PARTNER" else "🟡" if klass == "WARM PROJECT" else "👀"
     msg = (
@@ -592,7 +592,7 @@ def _notify(lead: dict[str, Any], prefix: str) -> None:
         f"{str(lead.get('text') or lead.get('message') or '')[:1200]}\n\n"
         f"🔗 {lead.get('url') or 'Doğrudan link yok'}"
     )
-    core.telegram(msg[:3900])
+    return core.telegram(msg[:3900]) is True
 
 
 def _save_new(db_client, lead: dict[str, Any], now: datetime) -> bool:
@@ -620,9 +620,40 @@ def _save_new(db_client, lead: dict[str, Any], now: datetime) -> bool:
 
 def _mark_notified(db_client, lead: dict[str, Any], now: datetime) -> None:
     db_client.collection(COLLECTION).document(lead["lead_id"]).set(
-        {"notified_at": now.isoformat(), "last_seen_at": now.isoformat()},
+        {"notified_at": now.isoformat(), "delivery_status": "delivered",
+         "last_delivery_attempt_at": now.isoformat(), "last_seen_at": now.isoformat()},
         merge=True,
     )
+
+
+def _mark_retry_pending(db_client, lead: dict[str, Any], now: datetime) -> None:
+    """A failed Telegram attempt must never consume the candidate's notification eligibility."""
+    db_client.collection(COLLECTION).document(lead["lead_id"]).set(
+        {"delivery_status": "retry_pending", "last_delivery_attempt_at": now.isoformat(),
+         "last_seen_at": now.isoformat()},
+        merge=True,
+    )
+
+
+def deliver_new_leads(db_client, leads: list[dict[str, Any]], now: datetime, debug: dict[str, Any]) -> int:
+    """Bounded, retryable delivery: only a confirmed Telegram response marks a lead notified."""
+    delivered = 0
+    attempts = 0
+    for lead in leads:
+        if attempts >= MAX_ALERTS:
+            break
+        if lead.get("lead_class") == "WATCH":
+            continue
+        attempts += 1
+        if _notify(lead, "NEW"):
+            _mark_notified(db_client, lead, now)
+            delivered += 1
+        else:
+            _mark_retry_pending(db_client, lead, now)
+            debug["errors"].append("telegram_delivery_failed")
+    debug["delivery_attempts"] = attempts
+    debug["delivery_failures"] = attempts - delivered
+    return delivered
 
 
 async def scan_telegram(db_client, now: datetime, debug: dict[str, Any]) -> list[dict[str, Any]]:
@@ -859,6 +890,7 @@ def main() -> None:
         "hub_raw": 0,
         "hub_accepted": 0,
         "hub_source_counts": {},
+        "source_health": {},
         "hub_youtube_urls": 0,
         "hub_forum_urls": 0,
         "rejects": Counter(),
@@ -877,6 +909,7 @@ def main() -> None:
     hub_rows, hub_meta = source_hub.collect_all()
     debug["hub_raw"] = len(hub_rows)
     debug["hub_source_counts"] = hub_meta.get("source_counts", {})
+    debug["source_health"] = hub_meta.get("source_health", {})
     debug["hub_youtube_urls"] = hub_meta.get("youtube_urls", 0)
     debug["hub_forum_urls"] = hub_meta.get("forum_urls", 0)
     hub_new = source_hub.process_rows(
@@ -900,15 +933,13 @@ def main() -> None:
         reverse=True,
     )
 
-    alerts = 0
-    for lead in new_leads:
-        if alerts >= MAX_ALERTS:
-            break
-        if lead.get("lead_class") == "WATCH":
-            continue
-        _notify(lead, "NEW")
-        _mark_notified(db_client, lead, now)
-        alerts += 1
+    alerts = deliver_new_leads(db_client, new_leads, now, debug)
+    source_issues = [
+        name for name, health in debug["source_health"].items()
+        if health.get("status") in {"unavailable", "degraded"}
+    ]
+    if source_issues:
+        debug["errors"].append("source_unavailable_or_degraded:" + ",".join(sorted(source_issues)))
 
     data = _serial(debug)
     data.update({
@@ -918,7 +949,7 @@ def main() -> None:
         "alerts": alerts,
     })
     Path("northlab-last-run.json").write_text(
-        json.dumps({"status": "success", **data}, ensure_ascii=False, indent=2),
+        json.dumps({"status": "degraded" if debug["errors"] else "success", **data}, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     db_client.collection(SCAN_COLLECTION).document(now.strftime("%Y%m%dT%H%M%SZ")).set(data)
