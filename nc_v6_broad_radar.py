@@ -13,6 +13,7 @@ from typing import Any
 
 import main as core
 import prime_buyer_policy as buyer_rules
+from prime_web_search import PaidBuyerSearch
 from telethon import functions as tg_functions
 
 import telegram_public_graph as tpg
@@ -3014,7 +3015,8 @@ async def broad_telegram_scan(db_client, started):
 # Broad web path
 # ---------------------------------------------------------------------------
 
-_existing_search = core.exa_search
+_paid_web_search = PaidBuyerSearch()
+_existing_search = _paid_web_search.search
 
 
 def _bing_rss_search(query: str, include_domains: list[str] | None = None) -> list[dict[str, Any]]:
@@ -3072,7 +3074,10 @@ def search_debug(query: str, include_domains: list[str] | None = None):
         DEBUG["web_provider_errors"][f"primary_search_{type(exc).__name__}"] += 1
         rows = []
     if not rows:
-        DEBUG["web_provider_errors"]["primary_search_empty_or_unavailable"] += 1
+        if _paid_web_search.exa_disabled and _paid_web_search.serper_disabled:
+            DEBUG["web_provider_errors"]["paid_search_disabled_for_run"] = 1
+        else:
+            DEBUG["web_provider_errors"]["exa_serper_empty_or_quota"] += 1
         rows = _bing_rss_search(query, include_domains)
 
     strong_rows = []
