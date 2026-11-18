@@ -1705,7 +1705,7 @@ def _already_notified_same_buyer_demand(db_client: Any, author: str, text: str) 
         query = db_client.collection(core.COLLECTION).where("author", "==", who).limit(40)
         for snap in query.stream():
             row = snap.to_dict() or {}
-            if not (row.get("v5_notified_at") or row.get("v6_notified_at")):
+            if not (row.get("v5_notified_at") or row.get("v6_notified_at") or row.get("core_notified_at")):
                 continue
             if _normalized_buyer_demand(row.get("message") or row.get("text") or "") == normalized:
                 return True
