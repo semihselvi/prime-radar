@@ -522,8 +522,6 @@ def classify(text: str, *, author: str = "", url: str = "") -> tuple[dict[str, A
         return None, "empty"
     if EXISTING_SITE_TASK_RE.search(value):
         return None, "existing_site_task_not_development"
-    if EDITORIAL_QUESTION_RE.search(value):
-        return None, "editorial_question_not_purchase"
     if JOB_SEEKER_RE.search(value):
         return None, "job_seeker"
     if EMPLOYMENT_RE.search(value):
@@ -544,6 +542,8 @@ def classify(text: str, *, author: str = "", url: str = "") -> tuple[dict[str, A
         return None, "developer_showcase"
     if CONTENT_ARTICLE_RE.search(value):
         return None, "content_article"
+    if EDITORIAL_QUESTION_RE.search(value):
+        return None, "editorial_question_not_purchase"
     if REFERENCE_SITE_MENTION_RE.search(value):
         return None, "reference_site_mention"
     if EXISTING_JOB_HELP_RE.search(value):
