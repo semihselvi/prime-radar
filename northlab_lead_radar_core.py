@@ -12,14 +12,8 @@ from typing import Any
 import nc_v6_broad_radar as radar
 
 
-VERSION = "1.3-atomic-buyer-delivery"
+VERSION = "1.4-unified-buyer-lifecycle"
 DELIVERY_LEDGER_COLLECTION = "prime_buyer_notification_deliveries"
-
-
-def is_actionable_buyer(lead: dict[str, Any]) -> bool:
-    """Use the exact same delivery policy as the Telegram notification boundary."""
-    eligible, _reason = radar.buyer_notification_eligibility(lead)
-    return eligible
 
 
 def _record_review_pending(db, lead: dict[str, Any], reason: str, now: datetime) -> bool:
@@ -120,13 +114,39 @@ def _deliver_once(db, lead: dict[str, Any], prefix: str, now: datetime) -> str:
     return "delivered"
 
 
-def recover_recent_unnotified(db, now: datetime, max_send: int = 3) -> dict[str, int]:
-    """Bounded 14-day replay of accepted but never notified Telegram leads.
+def process_candidates(db, candidates: list[dict[str, Any]], now: datetime, *,
+                       prefix: str, max_deliveries: int | None = None) -> dict[str, int]:
+    """Single delivery decision for new and recovered buyer candidates.
 
-    Already-notified rows are never resent. Reclassify against current rules
-    rather than relying on stale labels. This does NOT scrape old rejected posts.
+    The classifier, review queue, atomic delivery claim and receipt are shared;
+    sources and their retrieval stay independent.
     """
-    stats = {"scanned": 0, "eligible": 0, "notified": 0, "review_saved": 0, "duplicate": 0, "uncertain": 0, "errors": 0}
+    stats = {"eligible": 0, "notified": 0, "review_saved": 0,
+             "duplicate": 0, "uncertain": 0}
+    for candidate in candidates:
+        eligible, reason = radar.buyer_notification_eligibility(candidate)
+        if not eligible:
+            if reason == "buyer_needs_review":
+                if _record_review_pending(db, candidate, reason, now):
+                    stats["review_saved"] += 1
+            continue
+        stats["eligible"] += 1
+        if max_deliveries is not None and stats["notified"] >= max_deliveries:
+            break
+        delivery = _deliver_once(db, candidate, prefix, now)
+        if delivery == "delivered":
+            stats["notified"] += 1
+        elif delivery == "duplicate":
+            stats["duplicate"] += 1
+        else:
+            stats["uncertain"] += 1
+    return stats
+
+
+def recover_recent_unnotified(db, now: datetime, max_send: int = 3) -> dict[str, int]:
+    """Reclassify recent undelivered records and use the SAME delivery pipeline."""
+    stats = {"scanned": 0, "eligible": 0, "notified": 0,
+             "review_saved": 0, "duplicate": 0, "uncertain": 0, "errors": 0}
     if max_send <= 0:
         return stats
     cutoff = (now - timedelta(days=14)).isoformat()
@@ -137,10 +157,9 @@ def recover_recent_unnotified(db, now: datetime, max_send: int = 3) -> dict[str,
             .limit(180)
             .stream()
         )
+        candidates = []
         for snap in rows:
             stats["scanned"] += 1
-            if stats["notified"] >= max_send:
-                break
             lead = snap.to_dict() or {}
             if str(lead.get("platform") or lead.get("source") or "").casefold() != "telegram":
                 continue
@@ -152,26 +171,15 @@ def recover_recent_unnotified(db, now: datetime, max_send: int = 3) -> dict[str,
                 group=str(lead.get("group") or ""),
                 author=str(lead.get("author") or ""),
             )
-            if signal is None:
-                continue
-            candidate = {**lead, **signal, "lead_id": snap.id}
-            eligible, reason = radar.buyer_notification_eligibility(candidate)
-            if not eligible:
-                if reason == "buyer_needs_review":
-                    if _record_review_pending(db, candidate, reason, now):
-                        stats["review_saved"] += 1
-                continue
-            stats["eligible"] += 1
-            delivery = _deliver_once(db, candidate, "RECOVERED", now)
-            if delivery == "delivered":
-                stats["notified"] += 1
-            elif delivery == "duplicate":
-                stats["duplicate"] += 1
-            else:
-                stats["uncertain"] += 1
+            if signal is not None:
+                candidates.append({**lead, **signal, "lead_id": snap.id})
+
+        stats.update(process_candidates(
+            db, candidates, now, prefix="RECOVERED", max_deliveries=max_send
+        ))
     except Exception as exc:
         stats["errors"] += 1
-        print("PRIME_BUYER_RECOVERY_ERROR", type(exc).__name__, str(exc)[:300])
+        print("PRIME_BUYER_RECOVERY_ERROR", type(exc).__name__)
     return stats
 
 
@@ -227,28 +235,7 @@ async def _scan_once_with_policy() -> dict[str, Any]:
     if str(result.get("status") or "").startswith("skipped"):
         raise RuntimeError("PRIME_BUYER_TELEGRAM_SCAN_UNAVAILABLE: " + str(result.get("status")))
     raw = list(result.get("new_leads") or [])
-    buyers = []
-    review_saved = 0
-    for lead in raw:
-        eligible, reason = radar.buyer_notification_eligibility(lead)
-        if eligible:
-            buyers.append(lead)
-        elif reason == "buyer_needs_review":
-            if _record_review_pending(db, lead, reason, started):
-                review_saved += 1
-
-    notified = 0
-    duplicate = 0
-    uncertain = 0
-    for lead in buyers:
-        delivery = _deliver_once(db, lead, "NEW", started)
-        if delivery == "delivered":
-            notified += 1
-        elif delivery == "duplicate":
-            duplicate += 1
-        else:
-            uncertain += 1
-
+    new_stats = process_candidates(db, raw, started, prefix="NEW")
     recovery = recover_recent_unnotified(db, started)
     summary = {
         "recovery": recovery,
@@ -257,11 +244,11 @@ async def _scan_once_with_policy() -> dict[str, Any]:
         "groups": result.get("groups", 0),
         "messages": result.get("messages", 0),
         "raw_new": len(raw),
-        "buyers": len(buyers),
-        "review_saved": review_saved,
-        "notified": notified,
-        "duplicate_suppressed": duplicate,
-        "delivery_uncertain": uncertain,
+        "buyers": new_stats["eligible"],
+        "review_saved": new_stats["review_saved"],
+        "notified": new_stats["notified"],
+        "duplicate_suppressed": new_stats["duplicate"],
+        "delivery_uncertain": new_stats["uncertain"],
         "group_discovery_joined": result.get("group_discovery_joined", 0),
         "group_discovery_joined_samples": result.get("group_discovery_joined_samples", []),
         "group_discovery_found": result.get("group_discovery_found", 0),
