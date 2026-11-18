@@ -814,7 +814,7 @@ def _bing_rss(query: str, health: dict | None = None) -> list[dict[str, Any]]:
     try:
         r = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (compatible; NorthlabSalesRadar/1.0)"}, timeout=20)
         if r.status_code != 200:
-            source_hub._record_health(health, False, f"http_{r.status_code}")
+            source_hub.record_source_attempt(health, False, f"http_{r.status_code}")
             return []
         root = ET.fromstring(r.content)
         out = []
@@ -831,10 +831,10 @@ def _bing_rss(query: str, health: dict | None = None) -> list[dict[str, Any]]:
                 "published": item.findtext("pubDate") or "",
                 "author": "",
             })
-        source_hub._record_health(health, True)
+        source_hub.record_source_attempt(health, True)
         return out
     except Exception as exc:
-        source_hub._record_health(health, False, type(exc).__name__)
+        source_hub.record_source_attempt(health, False, type(exc).__name__)
         return []
 
 
@@ -866,7 +866,7 @@ def scan_web(db_client, now: datetime, debug: dict[str, Any]) -> list[dict[str, 
             debug["languages"][signal["language"]] += 1
             if _save_new(db_client, lead, now):
                 out.append(lead)
-    debug["source_health"]["web_search"] = source_hub._health_report(health)
+    debug["source_health"]["web_search"] = source_hub.summarize_source_health(health)
     return out
 
 
