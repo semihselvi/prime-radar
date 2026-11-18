@@ -1,0 +1,33 @@
+name: NorthLab buyer evidence regression (no live scans)
+
+"on":
+  push:
+    branches:
+      - repair/northlab-buyers-only-20261118
+    paths:
+      - northlab_sales_qualification.py
+      - northlab_sales_radar.py
+      - test_northlab_sales_radar.py
+      - .github/workflows/northlab-buyers-only-ci.yml
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  buyer-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install current dependencies
+        run: python -m pip install -r requirements.txt -r requirements-ocean.txt
+      - name: Verify all NorthLab tests without credentials or network scans
+        run: |
+          python -m py_compile northlab_sales_qualification.py northlab_sales_radar.py test_northlab_sales_radar.py
+          python -m unittest -v test_northlab_sales_radar.py
