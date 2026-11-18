@@ -338,11 +338,21 @@ class NorthlabSourceHealthRegressionTests(unittest.TestCase):
         self.assertEqual(meta["source_health"]["youtube"]["status"], "no_targets")
         self.assertEqual(meta["source_health"]["forums"]["status"], "no_targets")
 
+    def test_bing_429_is_reported_as_unavailable(self):
+        response = MagicMock()
+        response.status_code = 429
+        health = {}
+        with patch.object(radar.requests, "get", return_value=response):
+            self.assertEqual(radar._bing_rss("crm agency", health=health), [])
+        report = source_hub.summarize_source_health(health)
+        self.assertEqual(report["status"], "unavailable")
+        self.assertEqual(report["failures"]["http_429"], 1)
+
     def test_partial_source_failure_is_distinct_from_success(self):
         health = {}
-        source_hub._record_health(health, True)
-        source_hub._record_health(health, False, "http_403")
-        report = source_hub._health_report(health)
+        source_hub.record_source_attempt(health, True)
+        source_hub.record_source_attempt(health, False, "http_403")
+        report = source_hub.summarize_source_health(health)
         self.assertEqual(report["status"], "degraded")
         self.assertEqual(report["succeeded"], 1)
         self.assertEqual(report["failed"], 1)
