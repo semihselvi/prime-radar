@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -102,16 +103,37 @@ def _mark_notified(db, lead: dict[str, Any], when: datetime) -> None:
     )
 
 
-async def scan_once() -> dict[str, Any]:
-    # Hard production policy. The old multi-source radar remains frozen/manual;
-    # this core only searches public Telegram surfaces for direct buyers.
+@contextmanager
+def _prime_scan_environment():
+    """Scope legacy environment-driven policy to one scan; never leak it to later runs."""
+    defaults = {
+        "RADAR_GLOBAL_TELEGRAM_DAYS": "30",
+        "RADAR_PUBLIC_PEER_SCAN_LIMIT": "180",
+        "RADAR_LEARNED_TELEGRAM_QUERIES": "40",
+        "RADAR_SOURCE_EXPANSION_SEEDS": "16",
+        "RADAR_SOURCE_EXPANSION_CANDIDATES": "48",
+    }
+    keys = ("RADAR_SALES_ONLY", *defaults)
+    previous = {key: os.environ.get(key) for key in keys}
     os.environ["RADAR_SALES_ONLY"] = "1"
-    os.environ.setdefault("RADAR_GLOBAL_TELEGRAM_DAYS", "30")
-    os.environ.setdefault("RADAR_PUBLIC_PEER_SCAN_LIMIT", "180")
-    os.environ.setdefault("RADAR_LEARNED_TELEGRAM_QUERIES", "40")
-    os.environ.setdefault("RADAR_SOURCE_EXPANSION_SEEDS", "16")
-    os.environ.setdefault("RADAR_SOURCE_EXPANSION_CANDIDATES", "48")
+    for key, value in defaults.items():
+        os.environ.setdefault(key, value)
+    try:
+        yield
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
 
+
+async def scan_once() -> dict[str, Any]:
+    with _prime_scan_environment():
+        return await _scan_once_with_policy()
+
+
+async def _scan_once_with_policy() -> dict[str, Any]:
     started = datetime.now(timezone.utc)
     db = radar.core.db()
 
