@@ -82,6 +82,34 @@ assert new.WEB_LISTING_RE.pattern == old.radar._WEB_LISTING_RE.pattern
         self.assertFalse(b.serper_disabled)
         self.assertFalse(a.exa_disabled)
 
+    def test_v6_web_buyer_path_preserves_multilingual_explicit_purchase(self):
+        import nc_v6_broad_radar as v6
+        examples = [
+            "I want to buy an apartment in North Cyprus, budget £120000 near Long Beach.",
+            "Я хочу купить квартиру 2+1 в Искеле, бюджет 120000£.",
+            "Kuzey Kıbrıs'ta 2+1 daire satın almak istiyorum, bütçem £120000.",
+        ]
+        for text in examples:
+            with self.subTest(text=text):
+                record = {
+                    "url": "https://example.org/forum/request",
+                    "title": "Home purchase request",
+                    "text": text,
+                    "published": "2026-11-18",
+                }
+                result = v6.broad_web_classifier(record)
+                self.assertIsNotNone(result, text)
+                self.assertEqual(result["intent_type"], "BUYER")
+
+    def test_v6_web_path_rejects_rental_listing(self):
+        import nc_v6_broad_radar as v6
+        listing = {
+            "url": "https://example.org/flats-for-rent/123",
+            "title": "For Rent in North Cyprus",
+            "text": "Apartment 2+1 in Long Beach, monthly rental £700.",
+        }
+        self.assertIsNone(v6.broad_web_classifier(listing))
+
     def test_existing_rental_inventory_exclusions(self):
         self.assertTrue(policy.web_listing_url("https://example.com/flats-for-rent/123"))
         self.assertFalse(policy.web_listing_url("https://example.com/discussions/buy-apartment"))
