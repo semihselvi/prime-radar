@@ -1,6 +1,14 @@
 name: PRIME Buyer - Regression Checks
 
 on:
+  push:
+    branches:
+      - 'refactor/**'
+    paths:
+      - 'nc_v6_broad_radar.py'
+      - 'northlab_lead_radar_core.py'
+      - 'test_northlab_lead_radar_core.py'
+      - '.github/workflows/prime-buyer-regression.yml'
   pull_request:
     branches: [production/radar]
     paths:
@@ -36,4 +44,4 @@ jobs:
         run: python -m py_compile main.py nc_v6_broad_radar.py northlab_lead_radar_core.py public_web_buyer_radar.py
       - name: Unit and missed-lead regression suite
         run: |
-          python -m unittest -q test_nc_v6_broad_radar.py test_northlab_lead_radar_core.py test_prime_source_bootstrap.py test_public_web_buyer_radar.py
+          python -m unittest -q test_nc_v6_broad_radar.py test_northlab_lead_radar_core.py test_prime_source_bootstrap.py test_public_web_buyer_radar.py test_audit_recent_buyers.py
