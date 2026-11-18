@@ -1,3 +1,4 @@
+import os
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -149,6 +150,17 @@ class PrimeBuyerNotificationRecoveryTests(unittest.TestCase):
         self.assertEqual(result["notified"], 1)
         notify.assert_called_once()
         mark.assert_called_once()
+
+
+class PrimeBuyerPolicyIsolationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_scan_restores_environment_after_exception(self):
+        with patch.dict(os.environ, {"RADAR_SALES_ONLY": "0"}):
+            with patch.object(core.radar.core, "db", return_value=MagicMock()), \
+                 patch.object(core.radar, "broad_telegram_scan", new_callable=AsyncMock) as scan:
+                scan.return_value = {"status": "skipped_unauthorized", "new_leads": []}
+                with self.assertRaises(RuntimeError):
+                    await core.scan_once()
+            self.assertEqual(os.environ["RADAR_SALES_ONLY"], "0")
 
 
 class PrimeBuyerScanFailureTests(unittest.IsolatedAsyncioTestCase):
