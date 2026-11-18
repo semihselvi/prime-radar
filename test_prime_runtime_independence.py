@@ -36,6 +36,45 @@ class PrimeRuntimeIndependenceTests(unittest.TestCase):
             with self.subTest(message=message):
                 self.assertIs(policy.is_nonproperty_goods_request(message), blocked)
 
+    def test_extracted_guards_match_legacy_inside_disposable_subprocess(self):
+        # V5 itself applies global monkey patches, so run comparison in an
+        # isolated process. Never import legacy modules into production tests.
+        code = """
+import prime_buyer_policy as new
+import nc_v5_batch_quality_guard as old
+messages = [
+    "Куплю моющий робот пылесос для большой квартиры",
+    "Куплю телефон в Искеле",
+    "Куплю квартиру 2+1 в Искеле",
+    "Куплю 1+1 Royal Sun Elite",
+    "Хочу купить дом в Лапта",
+    "Куплю столик для квартиры",
+    "Куплю смартфон в Фамагусте",
+    "Куплю 2+1 в Long Beach с мебелью",
+    "Looking to buy a villa in Long Beach",
+    "Need a plumber to repair our apartment",
+    "Looking for a lawyer for our villa purchase",
+    "Продам квартиру в Искеле. Цена £120000",
+    "Срочная продажа квартиры, цена 120000£",
+    "Контакт менеджер PulseMarket",
+    "Новое объявление: цена 100000£",
+]
+for msg in messages:
+    assert new.is_nonproperty_goods_request(msg) == old.is_nonproperty_goods_request(msg), msg
+    assert bool(new.TG_STRONG_SUPPLY_RE.search(msg)) == bool(old.radar.TG_STRONG_SUPPLY_RE.search(msg)), msg
+    assert bool(new.TG_SERVICE_REQUEST_RE.search(msg)) == bool(old.radar.TG_SERVICE_REQUEST_RE.search(msg)), msg
+for url in (
+    "https://example.com/flats-for-rent/1",
+    "https://expat.com/housing/2",
+    "https://example.com/discussions/buy-flat",
+):
+    assert new.web_listing_url(url) == old.radar._web_listing_url(url), url
+assert new.WEB_LISTING_RE.pattern == old.radar._WEB_LISTING_RE.pattern
+"""
+        proc = subprocess.run([sys.executable, "-c", code],
+                              capture_output=True, text=True, timeout=20)
+        self.assertEqual(proc.returncode, 0, proc.stderr[-1700:])
+
     def test_paid_search_provider_is_per_instance(self):
         a = PaidBuyerSearch()
         b = PaidBuyerSearch()
