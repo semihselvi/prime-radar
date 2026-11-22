@@ -1,11 +1,11 @@
 {
   "status": "completed",
-  "scanned_at": "2026-11-21T20:40:13.214162+00:00",
+  "scanned_at": "2026-11-22T02:17:03.293570+00:00",
   "groups": 122,
-  "messages": 20228,
-  "matches": 20,
+  "messages": 20230,
+  "matches": 19,
   "niche_studio": 3,
-  "one_bed": 17,
+  "one_bed": 16,
   "unlinked": 0,
   "errors": 0,
   "public_offers": [
@@ -60,14 +60,6 @@
       "date": "2026-11-20T09:55:43+00:00",
       "url": "https://t.me/cyprusprop/985406",
       "price_mentions": []
-    },
-    {
-      "kind": "1+1",
-      "date": "2026-11-20T07:46:28+00:00",
-      "url": "https://t.me/northern_cyprus_forum/346001",
-      "price_mentions": [
-        "€ 1 "
-      ]
     },
     {
       "kind": "niche_studio",
