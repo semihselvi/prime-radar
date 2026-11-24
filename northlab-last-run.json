@@ -2,11 +2,11 @@
   "status": "degraded",
   "version": "3.0-single-buyer-decision",
   "telegram_groups": 93,
-  "telegram_messages": 1258,
+  "telegram_messages": 1177,
   "telegram_global_queries": 22,
   "telegram_global_messages": 234,
-  "web_raw": 213,
-  "web_accepted": 0,
+  "web_raw": 206,
+  "web_accepted": 5,
   "hub_raw": 23,
   "hub_accepted": 0,
   "hub_source_counts": {
@@ -71,43 +71,38 @@
   ],
   "delivery_attempts": 0,
   "delivery_failures": 0,
-  "qualification_review": 1,
+  "qualification_review": 6,
   "rejects": {
-    "no_project_signal": 703,
-    "marketplace_ad": 73,
-    "bot_author": 156,
-    "education": 44,
-    "crypto_or_earnings_recruitment": 2,
+    "no_project_signal": 643,
+    "marketplace_ad": 78,
+    "bot_author": 159,
     "duplicate_text": 260,
-    "weak_project_signal": 10,
-    "employment_vacancy": 5,
-    "job_seeker": 4,
-    "news_content": 15
+    "education": 29,
+    "news_content": 8,
+    "weak_project_signal": 8,
+    "job_seeker": 1,
+    "employment_vacancy": 5
   },
   "web_rejects": {
-    "no_project_signal": 141,
-    "platform_or_product_promo": 17,
-    "weak_project_signal": 17,
-    "existing_site_task_not_development": 1,
-    "service_provider_promo": 4,
-    "employment_vacancy": 1,
-    "marketplace_directory": 1
+    "no_project_signal": 127,
+    "platform_or_product_promo": 10,
+    "weak_project_signal": 23
   },
   "hub_rejects": {
     "education": 1,
     "no_project_signal": 22
   },
   "accepted_classes": {
-    "WARM PROJECT": 1
+    "WARM PROJECT": 6
   },
   "project_types": {
-    "WEBSITE": 1
+    "WEBSITE": 6
   },
   "languages": {
-    "RU": 1
+    "RU": 6
   },
-  "started_at": "2026-11-24T05:06:04.291477+00:00",
-  "completed_at": "2026-11-24T05:07:02.594187+00:00",
-  "new_leads": 1,
+  "started_at": "2026-11-24T12:56:05.814869+00:00",
+  "completed_at": "2026-11-24T12:57:15.420931+00:00",
+  "new_leads": 6,
   "alerts": 0
 }
