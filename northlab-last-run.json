@@ -2,17 +2,17 @@
   "status": "degraded",
   "version": "3.0-single-buyer-decision",
   "telegram_groups": 93,
-  "telegram_messages": 1168,
+  "telegram_messages": 1176,
   "telegram_global_queries": 22,
   "telegram_global_messages": 234,
-  "web_raw": 227,
+  "web_raw": 212,
   "web_accepted": 0,
-  "hub_raw": 23,
+  "hub_raw": 0,
   "hub_accepted": 0,
   "hub_source_counts": {
     "reddit": 0,
     "bluesky": 0,
-    "youtube": 23,
+    "youtube": 0,
     "forums": 0
   },
   "source_health": {
@@ -51,8 +51,8 @@
     },
     "youtube": {
       "status": "healthy",
-      "attempted": 1,
-      "succeeded": 1,
+      "attempted": 2,
+      "succeeded": 2,
       "failed": 0,
       "failures": {}
     },
@@ -64,7 +64,7 @@
       "failures": {}
     }
   },
-  "hub_youtube_urls": 1,
+  "hub_youtube_urls": 2,
   "hub_forum_urls": 0,
   "errors": [
     "source_unavailable_or_degraded:bluesky,reddit"
@@ -73,33 +73,30 @@
   "delivery_failures": 0,
   "qualification_review": 0,
   "rejects": {
-    "no_project_signal": 657,
-    "marketplace_ad": 78,
-    "employment_vacancy": 6,
-    "weak_project_signal": 9,
-    "education": 29,
-    "duplicate_text": 241,
-    "bot_author": 148,
+    "no_project_signal": 661,
+    "marketplace_ad": 77,
+    "education": 30,
+    "crypto_or_earnings_recruitment": 3,
+    "duplicate_text": 242,
     "job_seeker": 2,
+    "employment_vacancy": 8,
+    "weak_project_signal": 9,
+    "bot_author": 149,
     "news_content": 9,
-    "existing_site_task_not_development": 1,
-    "crypto_or_earnings_recruitment": 3
-  },
-  "web_rejects": {
-    "no_project_signal": 146,
-    "platform_or_product_promo": 13,
-    "weak_project_signal": 25,
     "existing_site_task_not_development": 1
   },
-  "hub_rejects": {
-    "education": 1,
-    "no_project_signal": 22
+  "web_rejects": {
+    "no_project_signal": 153,
+    "platform_or_product_promo": 9,
+    "weak_project_signal": 18,
+    "existing_site_task_not_development": 1
   },
+  "hub_rejects": {},
   "accepted_classes": {},
   "project_types": {},
   "languages": {},
-  "started_at": "2026-11-24T23:38:12.298457+00:00",
-  "completed_at": "2026-11-24T23:39:15.587814+00:00",
+  "started_at": "2026-11-25T03:43:40.273636+00:00",
+  "completed_at": "2026-11-25T03:44:57.615405+00:00",
   "new_leads": 0,
   "alerts": 0
 }
