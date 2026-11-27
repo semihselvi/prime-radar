@@ -2,17 +2,17 @@
   "status": "degraded",
   "version": "3.0-single-buyer-decision",
   "telegram_groups": 93,
-  "telegram_messages": 1155,
+  "telegram_messages": 1125,
   "telegram_global_queries": 22,
   "telegram_global_messages": 234,
-  "web_raw": 206,
-  "web_accepted": 3,
-  "hub_raw": 0,
+  "web_raw": 218,
+  "web_accepted": 0,
+  "hub_raw": 23,
   "hub_accepted": 0,
   "hub_source_counts": {
     "reddit": 0,
     "bluesky": 0,
-    "youtube": 0,
+    "youtube": 23,
     "forums": 0
   },
   "source_health": {
@@ -50,9 +50,9 @@
       }
     },
     "youtube": {
-      "status": "no_targets",
-      "attempted": 0,
-      "succeeded": 0,
+      "status": "healthy",
+      "attempted": 1,
+      "succeeded": 1,
       "failed": 0,
       "failures": {}
     },
@@ -66,48 +66,51 @@
       }
     }
   },
-  "hub_youtube_urls": 0,
+  "hub_youtube_urls": 1,
   "hub_forum_urls": 8,
   "errors": [
     "source_unavailable_or_degraded:bluesky,forums,reddit"
   ],
   "delivery_attempts": 0,
   "delivery_failures": 0,
-  "qualification_review": 4,
+  "qualification_review": 2,
   "rejects": {
-    "no_project_signal": 661,
-    "marketplace_ad": 62,
-    "duplicate_text": 248,
-    "bot_author": 132,
-    "education": 24,
+    "no_project_signal": 645,
+    "marketplace_ad": 51,
+    "duplicate_text": 250,
+    "bot_author": 128,
+    "employment_vacancy": 4,
+    "education": 23,
+    "crypto_or_earnings_recruitment": 1,
     "weak_project_signal": 12,
-    "employment_vacancy": 6,
     "reference_site_mention": 1,
-    "news_content": 15
+    "news_content": 14,
+    "job_seeker": 1
   },
   "web_rejects": {
-    "no_project_signal": 119,
-    "platform_or_product_promo": 17,
-    "weak_project_signal": 31,
-    "editorial_question_not_purchase": 1,
-    "education": 1,
+    "no_project_signal": 139,
+    "platform_or_product_promo": 14,
+    "weak_project_signal": 28,
     "existing_site_task_not_development": 1,
-    "employment_vacancy": 1,
+    "education": 1,
     "service_provider_promo": 4
   },
-  "hub_rejects": {},
+  "hub_rejects": {
+    "education": 1,
+    "no_project_signal": 22
+  },
   "accepted_classes": {
-    "WARM PROJECT": 4
+    "HOT PROJECT": 1,
+    "WARM PROJECT": 1
   },
   "project_types": {
-    "WEBSITE": 4
+    "WEBSITE": 2
   },
   "languages": {
-    "RU": 1,
-    "EN": 3
+    "RU": 2
   },
-  "started_at": "2026-11-27T11:24:58.043441+00:00",
-  "completed_at": "2026-11-27T11:26:06.511885+00:00",
-  "new_leads": 4,
+  "started_at": "2026-11-27T18:27:02.724235+00:00",
+  "completed_at": "2026-11-27T18:28:13.036624+00:00",
+  "new_leads": 2,
   "alerts": 0
 }
