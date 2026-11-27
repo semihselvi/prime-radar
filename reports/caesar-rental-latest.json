@@ -1,14 +1,26 @@
 {
   "status": "completed",
-  "scanned_at": "2026-11-27T13:56:55.936043+00:00",
+  "scanned_at": "2026-11-27T22:50:42.175842+00:00",
   "groups": 122,
-  "messages": 19912,
-  "matches": 23,
-  "niche_studio": 5,
+  "messages": 19944,
+  "matches": 21,
+  "niche_studio": 3,
   "one_bed": 18,
   "unlinked": 0,
   "errors": 0,
   "public_offers": [
+    {
+      "kind": "1+1",
+      "date": "2026-11-27T16:05:09+00:00",
+      "url": "https://t.me/cyprusprop/986679",
+      "price_mentions": []
+    },
+    {
+      "kind": "1+1",
+      "date": "2026-11-27T14:05:06+00:00",
+      "url": "https://t.me/cyprusprop/986648",
+      "price_mentions": []
+    },
     {
       "kind": "1+1",
       "date": "2026-11-27T11:36:01+00:00",
@@ -68,20 +80,6 @@
       ]
     },
     {
-      "kind": "1+1",
-      "date": "2026-11-25T11:56:16+00:00",
-      "url": "https://t.me/northern_cyprus_forum/347105",
-      "price_mentions": [
-        "€ 1 "
-      ]
-    },
-    {
-      "kind": "niche_studio",
-      "date": "2026-11-24T17:53:24+00:00",
-      "url": "https://t.me/ChatRealEstateSales7/209788",
-      "price_mentions": []
-    },
-    {
       "kind": "niche_studio",
       "date": "2026-11-24T17:46:49+00:00",
       "url": "https://t.me/NorthCyprus_Island/187957",
@@ -103,20 +101,8 @@
     },
     {
       "kind": "1+1",
-      "date": "2026-11-23T18:59:33+00:00",
-      "url": "https://t.me/cyprusprop/985994",
-      "price_mentions": []
-    },
-    {
-      "kind": "1+1",
       "date": "2026-11-23T18:55:16+00:00",
       "url": "https://t.me/NorthCyprus_Island/187755",
-      "price_mentions": []
-    },
-    {
-      "kind": "niche_studio",
-      "date": "2026-11-23T08:41:12+00:00",
-      "url": "https://t.me/NorthCyprus_Island/187649",
       "price_mentions": []
     },
     {
